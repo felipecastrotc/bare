@@ -1,0 +1,2 @@
+[console_scripts]
+bare = bare.bare_main:main
