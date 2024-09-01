@@ -10,14 +10,14 @@
 - **Session Management**: Manage different backup sessions with ease.
 - **Flexible Command Routing**: Use subcommands to run specific backup tasks, list configurations, or manage mount points.
 - **Automatic Mounting**: Automatically mount and unmount volumes or rclone remotes by specifying the volume label or rclone name.
-- **Cross-Platform Support**: Supports Linux and macOS.
+- **Cross-Platform Support**: Supports Linux, Android and macOS.
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/felipecastrotc/BARE.git
-   cd BARE
+   git clone https://github.com/felipecastrotc/bare.git
+   cd bare
    ```
 
 2. Install the required dependencies:
