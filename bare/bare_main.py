@@ -39,6 +39,7 @@ default_var = {
         "runner": "restic",
         "enable": True,
         "forget": None,
+        "skip-maintain": False,
     },
     "rsync": {
         "password": None,
@@ -80,10 +81,18 @@ def get_rsync_instance(config, destination_path, name):
 
 
 def post_backup_restic(restic_instance, config):
-    if isinstance(config["restic"]["forget"], dict):
-        print("Restic: Prunning old snapshots...")
-        restic_instance.forget(config["restic"]["forget"])
-        print("Restic: Finished prunning old snapshots!")
+    if not config["restic"]["skip-maintain"]:
+        forget_config = config.get("restic", {}).get("forget")
+        if isinstance(forget_config, dict):
+            print("Restic: Prunning old snapshots...")
+            restic_instance.forget(forget_config)
+            print("Restic: Finished prunning old snapshots!")
+
+        check_config = config.get("restic", {}).get("check")
+        if isinstance(check_config, dict):
+            print("Restic: Checking repository...")
+            restic_instance.check(check_config)
+            print("Restic: Finished checking repository!")
 
 
 def backup(var):
@@ -148,6 +157,43 @@ def restic(var, unknown):
                     print("Skipping to the next drive.")
 
 
+def maintain(var):
+    """
+    Perform maintenance tasks based on provided configuration.
+
+    Args:
+        var (dict): Dictionary with keys as item names and values as their configuration.
+    """
+    for name, config in var.items():
+        print(f"Starting maintenance for {name} to {config['destination']}")
+
+        try:
+            dh = DestinationHandler(config["destination"])
+
+            with dh as destination_path:
+
+                if config["restic"]["enable"]:
+                    print("Maintaining restic!")
+                    restic_instance = get_restic_instance(
+                        config, destination_path, name, dh.destination_type
+                    )
+                    post_backup_restic(restic_instance, config)
+                    print("Restic maintenance done!")
+                if (
+                    config["rsync"]["enable"]
+                    and dh.destination_type != "restic_rest_server"
+                ):
+                    print("NOT IMPLEMENTED YET!")
+                elif config["rsync"]["enable"]:
+                    print("The destination is a Restic rest server")
+
+        except AssertionError as e:
+            print(f"Error during backup: {e}")
+
+            if "Unable to find" in str(e) and len(var) > 1:
+                print("Skipping to the next drive.")
+
+
 def umount(var):
     """
     Unmount and clean the temporary folders created during the backup.
@@ -183,6 +229,8 @@ def router(cmd, var, unknown, target):
             restic(var, unknown)
         elif cmd == "umount":
             umount(var)
+        elif cmd == "maintain":
+            maintain(var)
 
 
 def main():
@@ -299,6 +347,18 @@ def main():
     listparser = subparser.add_parser(
         "list",
         help="List the sessions and configurations.",
+    )
+
+    # Maintain parser
+    maintainparse = subparser.add_parser(
+        "maintain",
+        help="Only run the maintaining options of the session.yml.",
+    )
+    maintainparse.add_argument(
+        "--target",
+        default=None,
+        nargs="?",
+        help="The setting to be used. Use 'list' to view available options.",
     )
 
     # Get arguments
