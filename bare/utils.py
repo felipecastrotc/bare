@@ -47,7 +47,7 @@ def stream_reader(pipe, output_list):
     pipe.close()
 
 
-def execute_command(command, env_vars=None, mask=None):
+def execute_command(command, env_vars=None, mask=None, ignore_error=False):
     """
     Execute a terminal command with optional environment variables and path masking,
     and return the output.
@@ -99,7 +99,7 @@ def execute_command(command, env_vars=None, mask=None):
         process.wait()
 
     # Check the process exit code to determine if the command was successful
-    if process.returncode != 0:
+    if process.returncode != 0 and not ignore_error:
         raise Exception(f"Command failed with error: {''.join(stderr_output)}")
 
     return "".join(stdout_output)

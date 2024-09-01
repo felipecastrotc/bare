@@ -38,6 +38,7 @@ default_var = {
         "restic_folder": "restic",
         "runner": "restic",
         "enable": True,
+        "forget": None,
     },
     "rsync": {
         "password": None,
@@ -78,6 +79,13 @@ def get_rsync_instance(config, destination_path, name):
     return rsync_instance
 
 
+def post_backup_restic(restic_instance, config):
+    if isinstance(config["restic"]["forget"], dict):
+        print("Restic: Prunning old snapshots...")
+        restic_instance.forget(config["restic"]["forget"])
+        print("Restic: Finished prunning old snapshots!")
+
+
 def backup(var):
     """
     Perform backup operations using the provided configuration. It handles both
@@ -90,15 +98,16 @@ def backup(var):
             with dh as destination_path:
                 if config["restic"]["enable"]:
                     print("Starting restic backup!")
-                    restic = get_restic_instance(
+                    restic_instance = get_restic_instance(
                         config, destination_path, name, dh.destination_type
                     )
                     mask = config["mask"]
                     args = config["restic"]["args"]
                     for i, source in enumerate(config["source"]):
                         mask_i = mask[i] if isinstance(mask, list) else mask
-                        restic.backup(source, args, mask_i)
+                        restic_instance.backup(source, args, mask_i)
                     print("Restic backup done!")
+                    post_backup_restic(restic_instance, config)
                 if (
                     config["rsync"]["enable"]
                     and dh.destination_type != "restic_rest_server"
@@ -128,10 +137,10 @@ def restic(var, unknown):
         try:
             dh = DestinationHandler(config["destination"])
             with dh as destination_path:
-                restic = get_restic_instance(
+                restic_instance = get_restic_instance(
                     config, destination_path, name, dh.destination_type
                 )
-                _ = restic.run(" ".join(unknown))
+                _ = restic_instance.run(" ".join(unknown))
         except AssertionError as e:
             print(f"Error during Restic command: {e}")
             if "Unable to find" in str(e):

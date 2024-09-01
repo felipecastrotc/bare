@@ -47,7 +47,7 @@ class Restic(Base):
             cmd += " --dry-run"
         # return execute_command_test(cmd, self.env, mask)
         print(cmd)
-        return execute_command(cmd, self.env, mask)
+        return execute_command(cmd, self.env, mask, ignore_error=True)
 
     def init(self):
         self.run("init")
@@ -59,8 +59,7 @@ class Restic(Base):
             base_cmd = f"backup {source} "
         # Rustic
         if self.runner == "rustic":
-            print(base_cmd + f"--as-path {mask}")
-            # self.run(base_cmd + f"--as-path {mask}", args, None, dry_run)
+            self.run(base_cmd + f"--as-path {mask}", args, None, dry_run)
         else:
             # For MacOS we cannot use proot so it goes back to rustic
             if mask is not None and platform.system() == "Darwin":
@@ -74,6 +73,15 @@ class Restic(Base):
             else:
                 # Uses proot
                 self.run(base_cmd, args, mask, dry_run)
+
+    def forget(self, options, hostname_filter=True, dry_run=False):
+        # Base command for forgetting and pruning backups
+        base_cmd = "forget --prune "
+        # Append the host filter to the command if the hostname is set
+        if self.hostname is not None and hostname_filter:
+            base_cmd += "--host " + self.hostname
+
+        self.run(base_cmd, args=options, dry_run=dry_run)
 
     def mount(self, destination, args={}, mask=None, dry_run=False):
         # Currently rustic does not support the mount option.
