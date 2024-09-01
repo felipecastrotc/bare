@@ -83,6 +83,15 @@ class Restic(Base):
 
         self.run(base_cmd, args=options, dry_run=dry_run)
 
+    def check(self, options, hostname_filter=True, dry_run=False):
+        # Base command for forgetting and pruning backups
+        base_cmd = "check "
+        # Append the host filter to the command if the hostname is set
+        if self.hostname is not None and hostname_filter:
+            base_cmd += "--host " + self.hostname
+
+        self.run(base_cmd, args=options, dry_run=dry_run)
+
     def mount(self, destination, args={}, mask=None, dry_run=False):
         # Currently rustic does not support the mount option.
         self.run(
