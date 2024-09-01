@@ -90,7 +90,9 @@ def backup(var):
             with dh as destination_path:
                 if config["restic"]["enable"]:
                     print("Starting restic backup!")
-                    restic = get_restic_instance(config, destination_path, name, dh.destination_type)
+                    restic = get_restic_instance(
+                        config, destination_path, name, dh.destination_type
+                    )
                     mask = config["mask"]
                     args = config["restic"]["args"]
                     for i, source in enumerate(config["source"]):
@@ -126,7 +128,9 @@ def restic(var, unknown):
         try:
             dh = DestinationHandler(config["destination"])
             with dh as destination_path:
-                restic = get_restic_instance(config, destination_path, name, dh.destination_type)
+                restic = get_restic_instance(
+                    config, destination_path, name, dh.destination_type
+                )
                 _ = restic.run(" ".join(unknown))
         except AssertionError as e:
             print(f"Error during Restic command: {e}")
@@ -281,7 +285,6 @@ def main():
         nargs="?",
         help="The backup setting to be used. Use 'list' to view available options.",
     )
-
 
     # List parser
     listparser = subparser.add_parser(

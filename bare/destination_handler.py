@@ -33,11 +33,11 @@ class DestinationHandler:
             parsed_url = urlparse(self.destination[5:])  # Strip 'rest:' and parse URL
             if parsed_url.scheme in ["http", "https"]:
                 return "restic_rest_server"
-        
+
         # Check if it's a volume label
         if not os.path.isabs(self.destination) and not os.path.exists(self.destination):
             return "volume"
-        
+
         # Otherwise, assume it's an absolute path
         return "abs_path"
 

@@ -5,13 +5,19 @@ from .base import MountBase
 from ..utils import execute_command, setup_environment
 from ..bare.gocryptfs import Gocryptfs
 
+
 class MountGocryptfs(MountBase):
     """
     Facilitates the mounting and unmounting of remote filesystems managed by rclone.
     Supports operations on Linux and Darwin operating systems.
     """
 
-    def __init__(self, path, gocryptfs_password, gocryptfs_folder="",):
+    def __init__(
+        self,
+        path,
+        gocryptfs_password,
+        gocryptfs_folder="",
+    ):
         self.gofs = Gocryptfs(path, gocryptfs_password, gocryptfs_folder)
 
     def mount(self, label, device=None):
@@ -28,7 +34,9 @@ class MountGocryptfs(MountBase):
                 out = execute_command(cmd.format(source), env=self.env)
                 # Generate a temporary folder to mount the gocryptfs
                 dest = self.generate_temporary_directory()
-                assert os.path.exists(dest), "Failed to create a temporary folder for gocryptfs"
+                assert os.path.exists(
+                    dest
+                ), "Failed to create a temporary folder for gocryptfs"
                 # Build the gocryptfs
                 self.gofs.path = source
                 self.gofs.mount(dest)
@@ -75,4 +83,3 @@ class MountGocryptfs(MountBase):
             raise NotImplementedError(
                 "Unmounting rclone drives is not implemented for Windows yet!"
             )
-

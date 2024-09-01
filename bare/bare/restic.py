@@ -13,7 +13,7 @@ class Restic(Base):
         hostname=None,
         name=None,
         check_hostname=True,
-        runner="restic"
+        runner="restic",
     ):
         super().__init__(hostname, name, check_hostname)
         # Restic password -> TODO: better way to store the password
@@ -23,14 +23,14 @@ class Restic(Base):
         self.restic_folder = restic_folder
 
         # Setup the runner restic/rustic
-        self.runner = runner # alternative "rustic"
+        self.runner = runner  # alternative "rustic"
         self.restic_cmd = "restic {} {} {}"
         self.rustic_cmd = "rustic {} {} {} --password " + restic_password
         if self.runner == "restic":
             self.cmd = self.restic_cmd
         else:
             self.cmd = self.rustic_cmd
-            
+
         # Setup the base directory used to access the repository
         if len(restic_folder) > 0:
             self.repo = f"-r {os.path.join(path, restic_folder)}"
@@ -64,14 +64,22 @@ class Restic(Base):
         else:
             # For MacOS we cannot use proot so it goes back to rustic
             if mask is not None and platform.system() == "Darwin":
-                self.run(base_cmd + f"--as-path {mask}", args, None, dry_run, custom_runner=self.rustic_cmd)
+                self.run(
+                    base_cmd + f"--as-path {mask}",
+                    args,
+                    None,
+                    dry_run,
+                    custom_runner=self.rustic_cmd,
+                )
             else:
                 # Uses proot
                 self.run(base_cmd, args, mask, dry_run)
 
     def mount(self, destination, args={}, mask=None, dry_run=False):
         # Currently rustic does not support the mount option.
-        self.run(f"mount {destination}", args, mask, dry_run, custom_runner=self.restic_cmd)
+        self.run(
+            f"mount {destination}", args, mask, dry_run, custom_runner=self.restic_cmd
+        )
 
     def __getattr__(self, name):
         # This method is called when an undefined attribute/method is accessed
