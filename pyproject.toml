@@ -107,7 +107,7 @@ install-precommit = "pre-commit install && pre-commit autoupdate || true"
 precommit-run = "pre-commit run --all-files"
 # Update hooked tool versions to their latest tags, then run once over the tree
 precommit-update = "pre-commit autoupdate && pre-commit run --all-files"
-# Remove the Git hook 
+# Remove the Git hook
 precommit-uninstall = "pre-commit uninstall"
 
 # Scripted installers (kept in-repo)
