@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import logging
 import os
 import platform
 import re
 import subprocess
 import threading
+from collections.abc import Sequence
+from typing import IO, Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,19 +15,19 @@ logger = logging.getLogger(__name__)
 class InfoOnlyFormatter(logging.Formatter):
     """Formatter that uses a simple format for INFO, detailed format otherwise."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.info_fmt = logging.Formatter("%(message)s")
         self.default_fmt = logging.Formatter(
             "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
         )
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         if record.levelno == logging.INFO:
             return self.info_fmt.format(record)
         return self.default_fmt.format(record)
 
 
-def setup_environment(env_vars=None):
+def setup_environment(env_vars: dict[str, str] | None = None) -> dict[str, str]:
     """
     Prepare and return the environment settings for the subprocess.
 
@@ -39,7 +43,7 @@ def setup_environment(env_vars=None):
     return environment
 
 
-def modify_command_for_os(command, mask=None):
+def modify_command_for_os(command: str, mask: Sequence[str] | None = None) -> str:
     """
     Modify the command based on the operating system, such as using proot on Linux.
 
@@ -57,7 +61,7 @@ def modify_command_for_os(command, mask=None):
     return command
 
 
-def stream_reader(pipe, output_list):
+def stream_reader(pipe: IO[str], output_list: list[str]) -> None:
     """Read from the pipe line by line and store the output in the provided list."""
     for line in iter(pipe.readline, ""):
         print(line, end="", flush=True)  # noqa: T201
@@ -65,7 +69,12 @@ def stream_reader(pipe, output_list):
     pipe.close()
 
 
-def execute_command(command, env_vars=None, mask=None, ignore_error=False):
+def execute_command(
+    command: str,
+    env_vars: dict[str, str] | None = None,
+    mask: Sequence[str] | None = None,
+    ignore_error: bool = False,
+) -> str:
     """
     Execute a terminal command with optional environment variables and path masking,
     and return the output.
@@ -85,8 +94,8 @@ def execute_command(command, env_vars=None, mask=None, ignore_error=False):
     command = modify_command_for_os(command, mask)
 
     # Initialize lists to capture standard output and error streams
-    stdout_output = []
-    stderr_output = []
+    stdout_output: list[str] = []
+    stderr_output: list[str] = []
 
     # Use subprocess to execute the command, capturing stdout and stderr
     with subprocess.Popen(
@@ -122,7 +131,11 @@ def execute_command(command, env_vars=None, mask=None, ignore_error=False):
     return "".join(stdout_output)
 
 
-def execute_command_test(command, env_vars=None, mask=None):
+def execute_command_test(
+    command: str,
+    env_vars: dict[str, str] | None = None,
+    mask: Sequence[str] | None = None,
+) -> str:
     """
     Execute a terminal command with optional environment variables and path masking,
     and return the output.
@@ -145,7 +158,7 @@ def execute_command_test(command, env_vars=None, mask=None):
     return command
 
 
-def build_command(command, *args):
+def build_command(command: str, *args: Any) -> str:
     """
     Build a shell command by concatenating a base command with additional arguments,
     ensuring proper spacing between each component.
@@ -168,7 +181,7 @@ def build_command(command, *args):
     return full_command
 
 
-def get_hostname():
+def get_hostname() -> str:
     """Retrieve the current machine's hostname.
 
     Returns:
@@ -182,8 +195,14 @@ def get_hostname():
     return hostname
 
 
-def dict2args(args, double="--", single="-", join_double=" ", join_single=" "):
-    def gen_arg(arg, val):
+def dict2args(
+    args: dict[str, Any],
+    double: str = "--",
+    single: str = "-",
+    join_double: str = " ",
+    join_single: str = " ",
+) -> str:
+    def gen_arg(arg: str, val: Any) -> str:
         # Determine the prefix for the argument name.
         arg_name = double + arg if len(arg) > 1 else single + arg
 
@@ -193,7 +212,7 @@ def dict2args(args, double="--", single="-", join_double=" ", join_single=" "):
         # Return the formatted argument string by combining the argument name, join character, and value.
         return arg_name + join + str(val)
 
-    out = []
+    out: list[str] = []
     for k, v in args.items():
         if isinstance(v, list):
             # If the value is a list, generate an argument string for each item in the list.
@@ -207,7 +226,7 @@ def dict2args(args, double="--", single="-", join_double=" ", join_single=" "):
     return " ".join(out)
 
 
-def parse_mount():
+def parse_mount() -> list[dict[str, str]]:
     """
     Parses the output of the 'mount' command to extract details about each mount.
 
@@ -224,7 +243,7 @@ def parse_mount():
 
     output = execute_command("mount")
 
-    mounts = []
+    mounts: list[dict[str, str]] = []
     for line in output.splitlines():
         if platform.system() == "Linux":
             # For Linux, mount output is typically like:
