@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import os
 import stat
 import tempfile
+from typing import Any
 
 from ..finder.devices import DeviceFinder
 
@@ -11,11 +14,11 @@ class MountBase:
     managing, and cleaning up temporary directories.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.finder = DeviceFinder()
         self.prefix = "BUP.tmp."
 
-    def get_dirname(self):
+    def get_dirname(self) -> str:
         """
         Creates a temporary directory to extract its path and then removes it,
         effectively fetching a directory name for potential use.
@@ -27,7 +30,7 @@ class MountBase:
         path = os.path.dirname(temp_dir)
         return path
 
-    def generate_temporary_directory(self, symbolic=False):
+    def generate_temporary_directory(self, symbolic: bool = False) -> str:
         """
         Generates a temporary directory with restrictive permissions. If the directory
         is intended for symbolic link creation, it is removed after creation.
@@ -48,7 +51,9 @@ class MountBase:
             )  # Remove the directory if it's for symbolic link purposes.
         return temp_dir
 
-    def clean_device_temporary_directory(self, device=None, path=None):
+    def clean_device_temporary_directory(
+        self, device: dict[str, Any] | None = None, path: str | None = None
+    ) -> None:
         """
         Cleans up a temporary directory created by this instance, either specified by a device's
         mountpoint or a direct path.
@@ -69,7 +74,12 @@ class MountBase:
         if path and self.prefix in path and os.path.exists(path):
             os.rmdir(path)
 
-    def get_device(self, label=None, device_name=None, path=None):
+    def get_device(
+        self,
+        label: str | None = None,
+        device_name: str | None = None,
+        path: str | None = None,
+    ) -> dict[str, Any]:
         """
         Retrieves a device based on its label or name or mountpoint. Exactly one parameter must be provided.
 

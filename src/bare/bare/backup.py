@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import os
+from typing import Any
 
 from ..destination_handler import DestinationHandler
 from .base import Base
@@ -25,13 +28,13 @@ class Backup(Base):
 
     def __init__(
         self,
-        source,
-        destination=None,
-        vol_label=None,
-        restic_password=None,
-        hostname=None,
-        name=None,
-    ):
+        source: str,
+        destination: str | None = None,
+        vol_label: str | None = None,
+        restic_password: str | None = None,
+        hostname: str | None = None,
+        name: str | None = None,
+    ) -> None:
         """
         Initializes the backup with necessary parameters.
 
@@ -57,13 +60,13 @@ class Backup(Base):
 
     def perform_backup(
         self,
-        use_restic=False,
-        use_rsync=False,
-        restic_args=None,
-        rsync_args=None,
-        mask=None,
-        dry_run=False,
-    ):
+        use_restic: bool = False,
+        use_rsync: bool = False,
+        restic_args: dict[str, Any] | None = None,
+        rsync_args: dict[str, Any] | None = None,
+        mask: str | None = None,
+        dry_run: bool = False,
+    ) -> None:
         """
         Performs the backup operation using specified methods: Restic or Rsync.
 
@@ -84,7 +87,13 @@ class Backup(Base):
             if use_rsync:
                 self._perform_rsync_backup(base_dest_path, rsync_args, mask, dry_run)
 
-    def _perform_restic_backup(self, base_dest_path, restic_args, mask, dry_run):
+    def _perform_restic_backup(
+        self,
+        base_dest_path: str,
+        restic_args: dict[str, Any],
+        mask: str | None,
+        dry_run: bool,
+    ) -> None:
         """Helper method to encapsulate Restic backup logic."""
         restic_runner = Restic(
             os.path.join(base_dest_path, self.destination),
@@ -96,7 +105,13 @@ class Backup(Base):
         logger.info("Performing Restic backup...")
         restic_runner.backup(self.source, restic_args, mask, dry_run)
 
-    def _perform_rsync_backup(self, base_dest_path, rsync_args, mask, dry_run):
+    def _perform_rsync_backup(
+        self,
+        base_dest_path: str,
+        rsync_args: dict[str, Any],
+        mask: str | None,
+        dry_run: bool,
+    ) -> None:
         """Helper method to encapsulate Rsync backup logic."""
         rsync_runner = Rsync(
             os.path.join(base_dest_path, self.destination),

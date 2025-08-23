@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import platform
+from typing import Any
 
 from ..utils import execute_command
 
@@ -10,7 +13,7 @@ class RcloneFinder:
     their mount points on Unix-like operating systems.
     """
 
-    def get_drives(self):
+    def get_drives(self) -> list[dict[str, Any]]:
         """
         Retrieves a list of mounted rclone drives, including their labels and filesystem type.
         Attempts to identify the mount points for each detected rclone remote.
@@ -34,7 +37,7 @@ class RcloneFinder:
         else:
             return []
 
-    def _add_mountpoint(self, mounts):
+    def _add_mountpoint(self, mounts: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Adds mount point information to each rclone drive based on the operating system.
 
@@ -56,7 +59,7 @@ class RcloneFinder:
             mount["mountpoints"] = [mountpoints.get(mount["label"], [])]
         return mounts
 
-    def get_rclone_mountpoint_unix(self):
+    def get_rclone_mountpoint_unix(self) -> dict[str, str]:
         """
         Retrieves rclone mount points on Unix-like operating systems by parsing the output of
         the `ps` command to find running rclone mount processes.

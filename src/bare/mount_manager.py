@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import platform
 
@@ -8,7 +10,7 @@ from .utils import execute_command
 
 
 class MountPointFinder:
-    def find_device(self, mount_point):
+    def find_device(self, mount_point: str) -> str | None:
         """Determine the method to use based on the operating system."""
         os_type = platform.system()
         if os_type == "Linux" or os_type == "Unix":
@@ -20,7 +22,7 @@ class MountPointFinder:
         else:
             raise NotImplementedError(f"OS {os_type} not supported.")
 
-    def _find_device_unix(self, mount_point):
+    def _find_device_unix(self, mount_point: str) -> str | None:
         """Find the device mounted at `mount_point` for Unix/Linux."""
         with open("/proc/mounts") as mounts:
             for line in mounts:
@@ -30,7 +32,7 @@ class MountPointFinder:
                     return parts[0].split("/dev/")[1]
         return None
 
-    def _find_device_darwin(self, mount_point):
+    def _find_device_darwin(self, mount_point: str) -> str | None:
         """Find the device mounted at `mount_point` on macOS."""
         # TODO
         out = execute_command("mount")
@@ -42,7 +44,7 @@ class MountPointFinder:
                 return parts[0].split("/dev/")[1]
         return None
 
-    def _find_device_windows(self, mount_point):
+    def _find_device_windows(self, mount_point: str) -> str | None:
         """Find the volume of the drive with the given letter on Windows."""
         # Adjust `mount_point` to match the expected input format for Windows (e.g., "C:")
         if not mount_point.endswith(":"):
@@ -71,7 +73,7 @@ class MountManager:
         self.mounter = MountDrive()
         self.mount_finder = MountPointFinder()
 
-    def get_mounted_devices(self):
+    def get_mounted_devices(self) -> dict[str, str]:
         """
         Retrieves a dictionary of currently mounted devices and their mount points.
 
@@ -82,16 +84,17 @@ class MountManager:
         ls = os.listdir(dirname)
         my_files = [x for x in ls if self.mount_base.prefix in x]
 
-        devices = {}
+        devices: dict[str, str] = {}
         for file in my_files:
             path = os.path.join(dirname, file)
             if os.path.ismount(path):
                 device = self.mount_finder.find_device(path)
-                devices[device] = path
+                if device is not None:
+                    devices[device] = path
 
         return devices
 
-    def umount_all(self):
+    def umount_all(self) -> None:
         """
         Unmounts all mounted devices that were mounted through this manager.
         Raises an exception if a device cannot be found.
@@ -102,7 +105,7 @@ class MountManager:
         for _, path in mounted_devices.items():
             self.mounter.unmount(path=path)
 
-    def clean(self):
+    def clean(self) -> None:
         """
         Cleans up all temporary directories and broken symbolic links created by the mount operations.
         """
@@ -116,7 +119,7 @@ class MountManager:
             elif not os.path.ismount(path) and not os.listdir(path):
                 os.rmdir(path)
 
-    def get_folders_created(self):
+    def get_folders_created(self) -> list[str]:
         """
         Retrieves a list of folder names created by the mount operations.
 
@@ -127,7 +130,7 @@ class MountManager:
         ls = os.listdir(dirname)
         return [x for x in ls if self.mount_base.prefix in x]
 
-    def clean_broken_symbolic_link(self, path):
+    def clean_broken_symbolic_link(self, path: str) -> None:
         """
         Cleans up a broken symbolic link.
 

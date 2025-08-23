@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
 import platform
+from typing import Any
 
 from ..bare.gocryptfs import Gocryptfs
 from ..utils import execute_command
@@ -17,13 +20,13 @@ class MountGocryptfs(MountBase):
 
     def __init__(
         self,
-        path,
-        gocryptfs_password,
-        gocryptfs_folder="",
-    ):
+        path: str,
+        gocryptfs_password: str,
+        gocryptfs_folder: str = "",
+    ) -> None:
         self.gofs = Gocryptfs(path, gocryptfs_password, gocryptfs_folder)
 
-    def mount(self, label, device=None):
+    def mount(self, label: str, device: dict[str, Any] | None = None) -> bool:
         """
         Mounts a gocryptfs-encrypted directory if it is not already mounted.
 
@@ -64,7 +67,12 @@ class MountGocryptfs(MountBase):
             )
             return False
 
-    def unmount(self, label=None, device=None, path=None):
+    def unmount(
+        self,
+        label: str | None = None,
+        device: dict[str, Any] | None = None,
+        path: str | None = None,
+    ) -> None:
         """
         Unmounts a remote filesystem identified by a label, device dictionary, or mount path.
 

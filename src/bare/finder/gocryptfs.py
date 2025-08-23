@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import platform
+from typing import Any
 
 from ..utils import parse_mount
 
@@ -8,7 +11,7 @@ class GocryptfsFinder:
     A class dedicated to finding and formatting gocryptfs mounted drives on the system.
     """
 
-    def get_drives(self):
+    def get_drives(self) -> list[dict[str, Any]]:
         """
         Public method to get formatted gocryptfs drive details.
 
@@ -17,7 +20,7 @@ class GocryptfsFinder:
         """
         return self._format_finder(self._get_gocryptfs_mounted())
 
-    def _get_mounted_by_os(self):
+    def _get_mounted_by_os(self) -> list[dict[str, str]]:
         """
         Private method to get mount details from the operating system.
 
@@ -35,7 +38,7 @@ class GocryptfsFinder:
                 "Mount point detection not implemented for Windows."
             )
 
-    def _get_gocryptfs_mounted(self):
+    def _get_gocryptfs_mounted(self) -> list[dict[str, str]]:
         """
         Filters the mounted drives to find those specifically using 'fuse.gocryptfs'.
 
@@ -45,7 +48,7 @@ class GocryptfsFinder:
         mounts = self._get_mounted_by_os()
         return [mount for mount in mounts if mount["fstype"] == "fuse.gocryptfs"]
 
-    def _format_finder(self, drives):
+    def _format_finder(self, drives: list[dict[str, str]]) -> list[dict[str, Any]]:
         """
         Formats the list of drives into a specified structure.
 

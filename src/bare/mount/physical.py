@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import platform
+from typing import Any
 
 from ..utils import execute_command
 from .base import MountBase
@@ -13,7 +16,7 @@ class MountDriveLinux(MountBase):
     Leverages `udisksctl` for performing the mount and unmount operations.
     """
 
-    def mount(self, device_name):
+    def mount(self, device_name: str) -> None:
         """
         Mounts a device by its name using `udisksctl`.
 
@@ -29,7 +32,7 @@ class MountDriveLinux(MountBase):
         except Exception as e:
             raise RuntimeError(f"Failed to mount /dev/{device_name}: {e}") from e
 
-    def unmount(self, path):
+    def unmount(self, path: str) -> None:
         """
         Unmounts a device by its mount path using `udisksctl`.
 
@@ -62,7 +65,7 @@ class MountDriveDarwin(MountBase):
     Uses the `diskutil` command-line utility for mounting operations.
     """
 
-    def mount(self, device_name):
+    def mount(self, device_name: str) -> None:
         """
         Mounts a device by its name to a temporary directory created for this purpose.
 
@@ -79,7 +82,7 @@ class MountDriveDarwin(MountBase):
         except Exception as e:
             raise RuntimeError(f"Failed to mount /dev/{device_name}: {e}") from e
 
-    def unmount(self, path):
+    def unmount(self, path: str) -> None:
         """
         Unmounts a device from a specified path.
 
@@ -98,14 +101,14 @@ class MountDriveDarwin(MountBase):
 
 class MountDriveWin(MountBase):
     # TODO:
-    def mount(self, device_name):
+    def mount(self, device_name: str) -> None:
         self.generate_temporary_directory()
         # Create a diskpart script to assign a drive letter
         # script = f"select volume {volume}\nassign letter={drive_letter}"
         # process = subprocess.run(['diskpart'], input=script.encode(), check=True)
         # execute_command(cmd)
 
-    def unmount(self, device_name):
+    def unmount(self, device_name: str) -> None:
         self.generate_temporary_directory()
         # Create a diskpart script to assign a drive letter
         # script = f"select volume {volume}\nassign letter={drive_letter}"
@@ -120,7 +123,9 @@ class MountDrivePhysical(MountBase):
     on the runtime OS.
     """
 
-    def mount(self, name=None, device=None):
+    def mount(
+        self, name: str | None = None, device: dict[str, Any] | None = None
+    ) -> bool:
         """
         Mounts a physical drive identified by its name or device dictionary. Automatically
         selects the correct mounting mechanism based on the operating system.
@@ -146,7 +151,12 @@ class MountDrivePhysical(MountBase):
             logger.info(f"Device is already mounted at: {device['mountpoints']}")
             return False
 
-    def unmount(self, name=None, device=None, path=None):
+    def unmount(
+        self,
+        name: str | None = None,
+        device: dict[str, Any] | None = None,
+        path: str | None = None,
+    ) -> None:
         """
         Unmounts a physical drive identified by its name, device dictionary, or path. Automatically
         selects the correct unmounting mechanism based on the operating system.
@@ -176,7 +186,7 @@ class MountDrivePhysical(MountBase):
         else:
             logger.info("Device is already unmounted or no mount point found.")
 
-    def _get_mounter(self):
+    def _get_mounter(self) -> MountBase:
         """
         Determines the appropriate mounter subclass based on the current operating system.
 
