@@ -1,12 +1,16 @@
 #!/usr/bin/python
 
+from __future__ import annotations
+
 import argparse
 import collections.abc
 import copy
 import logging
 import os
+from collections.abc import Mapping
+from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from . import DestinationHandler, MountManager, Restic, Rsync
 from .utils import InfoOnlyFormatter, get_hostname
@@ -19,13 +23,13 @@ logging.basicConfig(level=logging.INFO, handlers=[handler])
 logger = logging.getLogger(__name__)
 
 
-def update_nested(d, u):
+def update_nested(d: dict[str, Any] | None, u: Mapping[str, Any]) -> dict[str, Any]:
     """
     Recursively update a nested dictionary `d` with values from dictionary `u`.
     This is useful for merging configurations.
     """
     if d is None:
-        return u
+        return dict(u)
     for k, v in u.items():
         if isinstance(v, collections.abc.Mapping):
             d[k] = update_nested(d.get(k, {}), v)
@@ -34,7 +38,7 @@ def update_nested(d, u):
     return d
 
 
-default_var = {
+default_var: dict[str, Any] = {
     "hostname": None,
     "source": [None],
     "mask": None,
@@ -57,7 +61,12 @@ default_var = {
 }
 
 
-def get_restic_instance(config, destination_path, name, destination_type=None):
+def get_restic_instance(
+    config: dict[str, Any],
+    destination_path: str,
+    name: str,
+    destination_type: str | None = None,
+) -> Restic:
     if destination_type == "restic_rest_server":
         restic_folder = ""
     else:
@@ -75,7 +84,9 @@ def get_restic_instance(config, destination_path, name, destination_type=None):
     return restic_instance
 
 
-def get_rsync_instance(config, destination_path, name):
+def get_rsync_instance(
+    config: dict[str, Any], destination_path: str, name: str
+) -> Rsync:
     rsync_instance = Rsync(
         destination_path,
         rsync_folder=config["rsync"]["rsync_folder"],
@@ -86,7 +97,7 @@ def get_rsync_instance(config, destination_path, name):
     return rsync_instance
 
 
-def post_backup_restic(restic_instance, config):
+def post_backup_restic(restic_instance: Restic, config: dict[str, Any]) -> None:
     if not config["restic"]["skip-maintain"]:
         forget_config = config.get("restic", {}).get("forget")
         if isinstance(forget_config, dict):
@@ -101,7 +112,7 @@ def post_backup_restic(restic_instance, config):
             logger.info("Restic: Finished checking repository!")
 
 
-def backup(var):
+def backup(var: dict[str, dict[str, Any]]) -> None:
     """
     Perform backup operations using the provided configuration. It handles both
     Restic and Rsync backups based on the configuration.
@@ -143,7 +154,7 @@ def backup(var):
                 logger.info("Skipping to the next drive.")
 
 
-def restic(var, unknown):
+def restic(var: dict[str, dict[str, Any]], unknown: list[str]) -> None:
     """
     Execute a Restic command for each configuration entry.
     """
@@ -161,7 +172,7 @@ def restic(var, unknown):
                 logger.info("Skipping to the next drive.")
 
 
-def maintain(var):
+def maintain(var: dict[str, dict[str, Any]]) -> None:
     """
     Perform maintenance tasks based on provided configuration.
 
@@ -197,7 +208,7 @@ def maintain(var):
                 logger.info("Skipping to the next drive.")
 
 
-def umount(var):
+def umount(var: dict[str, dict[str, Any]]) -> None:
     """
     Unmount and clean the temporary folders created during the backup.
     """
@@ -209,14 +220,16 @@ def umount(var):
         logger.info(f"Error during unmount: {e}")
 
 
-def list_func(var, unknown):
+def list_func(var: dict[str, dict[str, Any]], unknown: list[str]) -> None:
     """
     List all available sessions and configurations.
     """
     logger.info(yaml.dump(list(var.keys())))
 
 
-def router(cmd, var, unknown, target):
+def router(
+    cmd: str, var: dict[str, dict[str, Any]], unknown: list[str], target: str | None
+) -> None:
     """
     Main function to route commands to the appropriate function.
     """
@@ -236,7 +249,7 @@ def router(cmd, var, unknown, target):
             maintain(var)
 
 
-def main():
+def main() -> None:
     # Initialize parser
     #
     parser = argparse.ArgumentParser(
