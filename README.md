@@ -12,6 +12,10 @@
 - **Automatic Mounting**: Automatically mount and unmount volumes or rclone remotes by specifying the volume label or rclone name.
 - **Cross-Platform Support**: Supports Linux, Android and macOS.
 
+## Documentation
+
+See the full documentation at [felipecastrotc.github.io/bare](https://felipecastrotc.github.io/bare/).
+
 ## Installation
 
 1. Clone the repository:
@@ -134,25 +138,9 @@ To create a custom session, create a `session.yml` file in your home directory u
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub if you have suggestions, bug reports, or enhancements.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for setup and development guidelines.
 
-### Development
-
-To maintain code quality, BARE uses `black` for code formatting. Please ensure that your code is formatted with `black` before submitting a pull request.
-
-To format your code with `black`, install it using pip:
-
-```bash
-pip install black
-```
-
-Then, format your code by running:
-
-```bash
-black .
-```
-
-This will automatically format all Python files in the current directory to conform to the `black` code style.
+Please note that this project is released with a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to abide by its terms.
 
 ## License
 
