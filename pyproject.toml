@@ -18,7 +18,7 @@ Homepage = "https://github.com/felipecastrotc/bare"
 Repository = "https://github.com/felipecastrotc/bare"
 
 [project.scripts]
-bare = "src.bare.bare_main:main"
+bare = "src.bare.main:main"
 
 [tool.hatch.version]
 source = "vcs"
