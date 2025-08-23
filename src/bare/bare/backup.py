@@ -1,8 +1,12 @@
+import logging
 import os
-from .restic import Restic
-from .rsync import Rsync
+
 from ..destination_handler import DestinationHandler
 from .base import Base
+from .restic import Restic
+from .rsync import Rsync
+
+logger = logging.getLogger(__name__)
 
 
 class Backup(Base):
@@ -89,7 +93,7 @@ class Backup(Base):
             name=self.name,
             check_hostname=False,
         )
-        print("Performing Restic backup...")
+        logger.info("Performing Restic backup...")
         restic_runner.backup(self.source, restic_args, mask, dry_run)
 
     def _perform_rsync_backup(self, base_dest_path, rsync_args, mask, dry_run):
@@ -100,5 +104,5 @@ class Backup(Base):
             name=self.name,
             check_hostname=False,
         )
-        print("Performing Rsync backup...")
+        logger.info("Performing Rsync backup...")
         rsync_runner.backup(self.source, rsync_args, mask, dry_run)

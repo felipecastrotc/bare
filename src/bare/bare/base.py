@@ -1,7 +1,8 @@
-import os
-from ..finder.devices import DeviceFinder
-from ..mount_manager import MountManager
-from ..utils import execute_command, get_hostname, setup_environment
+import logging
+
+from ..utils import get_hostname, setup_environment
+
+logger = logging.getLogger(__name__)
 
 
 class Base:
@@ -38,8 +39,10 @@ class Base:
             current_hostname = get_hostname()
 
             if hostname and hostname != current_hostname:
-                print("The passed hostname is different from the current hostname!")
-                print("You may overwrite a backup that's not yours.")
+                logger.info(
+                    "The passed hostname is different from the current hostname!"
+                )
+                logger.info("You may overwrite a backup that's not yours.")
                 if input("Do you want to continue? (y/n) ").lower().strip()[:1] == "n":
                     exit()
             return hostname or current_hostname

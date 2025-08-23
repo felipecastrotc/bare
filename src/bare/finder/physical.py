@@ -1,5 +1,5 @@
-import platform
 import json
+import platform
 import plistlib
 
 from ..utils import execute_command

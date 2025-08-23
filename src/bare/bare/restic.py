@@ -1,7 +1,11 @@
+import logging
 import os
 import platform
+
+from ..utils import dict2args, execute_command
 from .base import Base
-from ..utils import execute_command, dict2args, execute_command_test
+
+logger = logging.getLogger(__name__)
 
 
 class Restic(Base):
@@ -37,8 +41,10 @@ class Restic(Base):
         else:
             self.repo = f"-r {path}"
 
-    def run(self, cmd, args={}, mask=None, dry_run=False, custom_runner=None):
-        print("Context: {}".format(self.name))
+    def run(self, cmd, args=None, mask=None, dry_run=False, custom_runner=None):
+        if args is None:
+            args = {}
+        logger.info(f"Context: {self.name}")
         # Select runner
         runner = self.cmd if custom_runner is None else custom_runner
         # Build command
@@ -46,13 +52,15 @@ class Restic(Base):
         if dry_run:
             cmd += " --dry-run"
         # return execute_command_test(cmd, self.env, mask)
-        print(cmd)
+        logger.info(cmd)
         return execute_command(cmd, self.env, mask, ignore_error=True)
 
     def init(self):
         self.run("init")
 
-    def backup(self, source, args={}, mask=None, dry_run=False):
+    def backup(self, source, args=None, mask=None, dry_run=False):
+        if args is None:
+            args = {}
         if self.hostname is not None:
             base_cmd = f"backup {source} --host {self.hostname} "
         else:
@@ -88,8 +96,10 @@ class Restic(Base):
         base_cmd = "check "
         self.run(base_cmd, args=options, dry_run=dry_run)
 
-    def mount(self, destination, args={}, mask=None, dry_run=False):
+    def mount(self, destination, args=None, mask=None, dry_run=False):
         # Currently rustic does not support the mount option.
+        if args is None:
+            args = {}
         self.run(
             f"mount {destination}", args, mask, dry_run, custom_runner=self.restic_cmd
         )

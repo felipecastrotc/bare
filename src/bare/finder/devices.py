@@ -1,12 +1,6 @@
-import platform
-import json
-import plistlib
-
-from ..utils import execute_command
-
+from .gocryptfs import GocryptfsFinder
 from .physical import DriveFinder
 from .rclone import RcloneFinder
-from .gocryptfs import GocryptfsFinder
 
 
 class DeviceFinder:
@@ -50,11 +44,14 @@ class DeviceFinder:
         filtered_devices = []
 
         for device in devices:
-            if name and device["name"] == name:
-                filtered_devices.append(device)
-            elif label and device["label"] == label:
-                filtered_devices.append(device)
-            elif path and path in device["mountpoints"]:
+            if (
+                name
+                and device["name"] == name
+                or label
+                and device["label"] == label
+                or path
+                and path in device["mountpoints"]
+            ):
                 filtered_devices.append(device)
 
         return filtered_devices

@@ -1,8 +1,26 @@
+import logging
 import os
 import platform
-import subprocess
 import re
+import subprocess
 import threading
+
+logger = logging.getLogger(__name__)
+
+
+class InfoOnlyFormatter(logging.Formatter):
+    """Formatter that uses a simple format for INFO, detailed format otherwise."""
+
+    def __init__(self):
+        self.info_fmt = logging.Formatter("%(message)s")
+        self.default_fmt = logging.Formatter(
+            "[%(asctime)s] %(levelname)s in %(name)s: %(message)s"
+        )
+
+    def format(self, record):
+        if record.levelno == logging.INFO:
+            return self.info_fmt.format(record)
+        return self.default_fmt.format(record)
 
 
 def setup_environment(env_vars=None):
@@ -42,7 +60,7 @@ def modify_command_for_os(command, mask=None):
 def stream_reader(pipe, output_list):
     """Read from the pipe line by line and store the output in the provided list."""
     for line in iter(pipe.readline, ""):
-        print(line, end="", flush=True)
+        print(line, end="", flush=True)  # noqa: T201
         output_list.append(line)
     pipe.close()
 
@@ -79,7 +97,6 @@ def execute_command(command, env_vars=None, mask=None, ignore_error=False):
         env=environment,
         universal_newlines=True,
     ) as process:
-
         # Create threads to read stdout and stderr to avoid blocking
         stdout_thread = threading.Thread(
             target=stream_reader, args=(process.stdout, stdout_output)
@@ -121,10 +138,10 @@ def execute_command_test(command, env_vars=None, mask=None):
     Raises:
     Exception: If the command execution fails, an exception is raised with the error message.
     """
-    environment = setup_environment(env_vars)
+    _ = setup_environment(env_vars)
     command = modify_command_for_os(command, mask)
 
-    print(f"I was supposed to run: {command}")
+    logger.info(f"I was supposed to run: {command}")
     return command
 
 

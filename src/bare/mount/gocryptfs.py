@@ -1,9 +1,12 @@
-import platform
+import logging
 import os
+import platform
 
-from .base import MountBase
-from ..utils import execute_command, setup_environment
 from ..bare.gocryptfs import Gocryptfs
+from ..utils import execute_command
+from .base import MountBase
+
+logger = logging.getLogger(__name__)
 
 
 class MountGocryptfs(MountBase):
@@ -21,29 +24,45 @@ class MountGocryptfs(MountBase):
         self.gofs = Gocryptfs(path, gocryptfs_password, gocryptfs_folder)
 
     def mount(self, label, device=None):
+        """
+        Mounts a gocryptfs-encrypted directory if it is not already mounted.
+
+        Args:
+            label: The label or path of the gocryptfs directory to mount.
+            device: Optional. Reserved for compatibility; not currently used in logic.
+
+        Returns:
+            True if the directory was successfully mounted.
+            False if it was already mounted or if mounting failed.
+        """
         source = label
         device = self.finder.find_device(source)
 
         if len(device) > 0:
-            print(f"Device is already mounted at: {device['mountpoints']}")
+            logger.info(f"Device is already mounted at: {device['mountpoints']}")
             return False
-        else:
-            try:
-                # Check if a folder is a gocryptfs repo, if not it will raise an error
-                cmd = "gocryptfs -info {}"
-                out = execute_command(cmd.format(source), env=self.env)
-                # Generate a temporary folder to mount the gocryptfs
-                dest = self.generate_temporary_directory()
-                assert os.path.exists(
-                    dest
-                ), "Failed to create a temporary folder for gocryptfs"
-                # Build the gocryptfs
-                self.gofs.path = source
-                self.gofs.mount(dest)
-                return True
-            except:
-                print(f"The path: {source} is not a valid gocryptfs repository.")
-                return False
+
+        try:
+            # Check if the folder is a valid gocryptfs repo; will raise if not
+            cmd = "gocryptfs -info {}"
+            execute_command(cmd.format(source), env=self.env)
+
+            # Create a temporary directory to use as the mount point
+            dest = self.generate_temporary_directory()
+            assert os.path.exists(dest), (
+                "Temporary folder for gocryptfs does not exist after creation."
+            )
+
+            # Set the path and mount the encrypted filesystem
+            self.gofs.path = source
+            self.gofs.mount(dest)
+            return True
+
+        except Exception as e:
+            logger.info(
+                f"The path: {source} is not a valid gocryptfs repository. Error: {e}"
+            )
+            return False
 
     def unmount(self, label=None, device=None, path=None):
         """
@@ -69,7 +88,7 @@ class MountGocryptfs(MountBase):
             if device["mountpoints"]:
                 unmount_path = device["mountpoints"][0]
             else:
-                print("The rclone drive is already unmounted!!")
+                logger.info("The rclone drive is already unmounted!!")
                 return None
         else:
             unmount_path = path

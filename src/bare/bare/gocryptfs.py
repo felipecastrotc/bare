@@ -1,6 +1,5 @@
-import os
+from ..utils import dict2args, execute_command
 from .base import Base
-from ..utils import execute_command, dict2args, execute_command_test
 
 
 class Gocryptfs(Base):
@@ -19,7 +18,9 @@ class Gocryptfs(Base):
         # Setup the base directory used to access the repository
         self.cmd = 'gocryptfs -extpass "echo $GOCRYPTFS_PASSWORD" {} {} {}'
 
-    def run(self, cmd="", args={}, mask=None):
+    def run(self, cmd="", args=None, mask=None):
+        if args is None:
+            args = {}
         cmd = self.cmd.format(dict2args(args, double="-"), self.path, cmd)
         # return execute_command_test(cmd, self.env, mask)
         return execute_command(cmd, self.env, mask)
@@ -27,7 +28,9 @@ class Gocryptfs(Base):
     def init(self):
         self.run({"init": ""})
 
-    def mount(self, destination, args={}, mask=None):
+    def mount(self, destination, args=None, mask=None):
+        if args is None:
+            args = {}
         self.run(destination, args, mask)
 
     def __getattr__(self, name):
