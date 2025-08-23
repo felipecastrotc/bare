@@ -48,6 +48,7 @@ default_var: dict[str, Any] = {
         "enable": True,
         "restic_folder": "restic",
         "runner": "restic",
+        "bin_path": None,
         "forget": None,
         "skip-maintain": False,
     },
@@ -71,6 +72,7 @@ def get_restic_instance(
         restic_folder = ""
     else:
         restic_folder = config["restic"]["restic_folder"]
+
     restic_instance = Restic(
         destination_path,
         config["restic"]["password"],
@@ -79,6 +81,7 @@ def get_restic_instance(
         name=name,
         check_hostname=config["check_hostname"],
         runner=config["restic"]["runner"],
+        bin_path=config["restic"]["bin_path"],
     )
     logger.info(config)
     return restic_instance
