@@ -1,0 +1,4 @@
+site_name: BARE
+nav:
+  - Home: index.md
+docs_dir: docs

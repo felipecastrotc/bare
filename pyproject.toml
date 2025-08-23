@@ -14,7 +14,14 @@ dynamic = ["version"]
 dependencies = ["pyyaml>=6.0.2,<7"]
 
 [project.optional-dependencies]
-dev = ["ruff>=0.12.10,<0.13", "pre-commit>=4.3.0,<5"]
+dev = [
+  "ruff>=0.12.10,<0.13",
+  "pre-commit>=4.3.0,<5",
+  "mypy>=1.11,<2",
+  "pytest>=8.2,<9",
+  "pytest-cov>=5,<6",
+  "mkdocs>=1.6,<2",
+]
 
 [project.urls]
 Homepage = "https://github.com/felipecastrotc/bare"
@@ -83,6 +90,14 @@ indent-style = "space"
 line-ending = "lf"
 
 
+[tool.coverage.run]
+branch = true
+source = ["src/bare"]
+
+[tool.coverage.report]
+show_missing = true
+
+
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
@@ -91,6 +106,8 @@ testpaths = ["tests"]
 python_version = "3.12"
 strict = true
 warn_unused_ignores = true
+ignore_missing_imports = true
+follow_imports = "skip"
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
