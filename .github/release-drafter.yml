@@ -1,0 +1,40 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+# How to bump based on PR labels
+version-resolver:
+  major:
+    labels:
+      - "major"
+  minor:
+    labels:
+      - "minor"
+  patch:
+    labels:
+      - "patch"
+  default: patch  # if no label is found
+
+# How PRs will be grouped in the release notes
+categories:
+  - title: "🚀 Features"
+    labels:
+      - "minor"
+      - "feature"
+  - title: "🐛 Fixes"
+    labels:
+      - "patch"
+      - "bug"
+  - title: "💥 Breaking Changes"
+    labels:
+      - "major"
+
+# How each PR appears in the changelog
+change-template: "- $TITLE (#$NUMBER) by @$AUTHOR"
+
+# Optional footer for every release
+template: |
+  ## Changes
+  $CHANGES
+
+  ## Contributors
+  $CONTRIBUTORS
