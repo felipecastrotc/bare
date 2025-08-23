@@ -5,6 +5,8 @@ the backup system, including handlers for backup tools, mounting, and
 destination management.
 """
 
+from __future__ import annotations
+
 # Main Backup Classes
 from .bare.backup import Backup
 from .bare.gocryptfs import Gocryptfs

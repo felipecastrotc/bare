@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from .base import MountBase
 from .physical import MountDrivePhysical
 from .rclone import MountDriveRclone
@@ -9,7 +11,7 @@ class MountDrive(MountBase):
     the appropriate mounting strategy based on the drive's file system type.
     """
 
-    def mount(self, label=None, device_name=None):
+    def mount(self, label: str | None = None, device_name: str | None = None) -> bool:
         """
         Mounts a device identified by its label or name. Automatically selects
         the correct mounting strategy (rclone or physical) based on the file system type.
@@ -44,7 +46,12 @@ class MountDrive(MountBase):
     #             mount = MountDrivePhysical()
     #         mount.unmount(name=device_name, device=device, path=path)
 
-    def unmount(self, label=None, device_name=None, path=None):
+    def unmount(
+        self,
+        label: str | None = None,
+        device_name: str | None = None,
+        path: str | None = None,
+    ) -> None:
         """
         Unmounts a device identified by its label, name, or mount path. Automatically selects
         the correct unmounting strategy (rclone or physical) based on the file system type.
@@ -70,7 +77,9 @@ class MountDrive(MountBase):
 
         mounter.unmount(device=device, path=path)
 
-    def get_mountpoint(self, label=None, device_name=None):
+    def get_mountpoint(
+        self, label: str | None = None, device_name: str | None = None
+    ) -> list[str]:
         """
         Retrieves the mount points for a device identified by its label or name.
 

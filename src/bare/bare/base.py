@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 
 from ..utils import get_hostname, setup_environment
@@ -18,13 +20,18 @@ class Base:
         mount_drive (MountDrive): Instance for managing mount operations.
     """
 
-    def __init__(self, hostname=None, name=None, check_hostname=True):
+    def __init__(
+        self,
+        hostname: str | None = None,
+        name: str | None = None,
+        check_hostname: bool = True,
+    ) -> None:
         self.env = setup_environment()
         self.name = name or "default_session"
 
         self.hostname = self.confirm_hostname(hostname, check_hostname)
 
-    def confirm_hostname(self, hostname, check=True):
+    def confirm_hostname(self, hostname: str | None, check: bool = True) -> str | None:
         """
         Confirms if the provided hostname matches the current machine's hostname.
         Prompts the user for confirmation if different, allowing to exit or continue.
@@ -33,7 +40,7 @@ class Base:
             hostname (str): The hostname to confirm.
 
         Returns:
-            str: The confirmed hostname or the current machine's hostname if none provided.
+            str | None: The confirmed hostname or the current machine's hostname if none provided.
         """
         if check:
             current_hostname = get_hostname()

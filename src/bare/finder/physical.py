@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import json
 import platform
 import plistlib
+from typing import Any
 
 from ..utils import execute_command
 
@@ -15,7 +18,7 @@ class DriveFinderLinux:
     DEFAULT_LABEL = ""
     DEFAULT_MOUNTPOINTS = []
 
-    def extract_partitions(self, blks):
+    def extract_partitions(self, blks: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Identifies and returns all partitions (leaf nodes) from the provided block device structure.
 
@@ -29,7 +32,9 @@ class DriveFinderLinux:
         self._recurse_partitions(blks, partitions)
         return partitions
 
-    def _recurse_partitions(self, nodes, partitions):
+    def _recurse_partitions(
+        self, nodes: list[dict[str, Any]], partitions: list[dict[str, Any]]
+    ) -> None:
         """
         Recursively traverses the block device tree to find and append leaf nodes (partitions) to the partitions list.
 
@@ -43,7 +48,7 @@ class DriveFinderLinux:
             else:
                 partitions.append(node)
 
-    def get_physical_drives(self):
+    def get_physical_drives(self) -> list[dict[str, Any]]:
         """
         Retrieves and processes information about physical drives and their partitions on Linux.
 
@@ -83,7 +88,7 @@ class DriveFinderDarwin:
         "Windows_NTFS": "ntfs",
     }
 
-    def get_physical_drives(self):
+    def get_physical_drives(self) -> list[dict[str, Any]]:
         """
         Executes a command to fetch information about physical drives and their partitions,
         parsing the output into a structured list of dictionaries.
@@ -112,7 +117,7 @@ class DriveFinderDarwin:
 
         return found_devices
 
-    def _parse_disk_info(self, disk):
+    def _parse_disk_info(self, disk: dict[str, Any]) -> dict[str, Any]:
         """
         Parses disk information, applying defaults and converting filesystem types as necessary.
 
@@ -131,7 +136,7 @@ class DriveFinderDarwin:
             ),
         }
 
-    def _parse_partition_info(self, partition):
+    def _parse_partition_info(self, partition: dict[str, Any]) -> dict[str, Any]:
         """
         Parses partition information, applying defaults and converting filesystem types as necessary.
 
@@ -150,7 +155,7 @@ class DriveFinderDarwin:
             ),
         }
 
-    def _parse_mountpoint(self, data):
+    def _parse_mountpoint(self, data: dict[str, Any]) -> list[str] | str:
         """
         Parses the mount point information from the given data, adjusting paths as necessary.
 
@@ -175,7 +180,7 @@ class DriveFinderDarwin:
 
 
 class DriveFinder:
-    def get_drives(self):
+    def get_drives(self) -> list[dict[str, Any]]:
         """
         Retrieves a list of physical drives based on the operating system.
         Raises NotImplementedError for unsupported platforms.
@@ -186,7 +191,9 @@ class DriveFinder:
         finder = self._get_platform_finder()
         return finder.get_physical_drives() if finder else []
 
-    def _get_platform_finder(self):
+    def _get_platform_finder(
+        self,
+    ) -> DriveFinderLinux | DriveFinderDarwin | None:
         """
         Returns an instance of a platform-specific device finder.
 

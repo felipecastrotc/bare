@@ -1,11 +1,19 @@
+from __future__ import annotations
+
 import os
+from types import TracebackType
 from urllib.parse import urlparse
 
 from .mount.drive import MountDrive
 
 
 class DestinationHandler:
-    def __init__(self, destination, relative_path=None, crypt=None):
+    def __init__(
+        self,
+        destination: str,
+        relative_path: str | None = None,
+        crypt: str | None = None,
+    ) -> None:
         """
         Initialize a DestinationHandler object to manage different types of storage locations.
 
@@ -21,7 +29,7 @@ class DestinationHandler:
         self.do_i_mounted = False
         self.destination_type = self.detect_destination_type()
 
-    def detect_destination_type(self):
+    def detect_destination_type(self) -> str:
         """
         Detects the type of destination based on the provided destination.
 
@@ -41,7 +49,7 @@ class DestinationHandler:
         # Otherwise, assume it's an absolute path
         return "abs_path"
 
-    def mount(self):
+    def mount(self) -> str:
         """
         Mounts the drive, checks the absolute path, or handles Restic REST server as appropriate.
 
@@ -58,7 +66,7 @@ class DestinationHandler:
         elif self.destination_type == "restic_rest_server":
             return self._handle_restic_rest_server()
 
-    def _mount_drive(self):
+    def _mount_drive(self) -> str:
         """
         Helper method to mount the drive and return the mounted path.
 
@@ -78,7 +86,7 @@ class DestinationHandler:
             mount_points[0], self.relative_path if self.relative_path else ""
         )
 
-    def _check_abs_path(self):
+    def _check_abs_path(self) -> str:
         """
         Helper method to check if the absolute path exists.
 
@@ -93,7 +101,7 @@ class DestinationHandler:
         else:
             raise FileExistsError(f"The path {self.destination} must exist.")
 
-    def _handle_restic_rest_server(self):
+    def _handle_restic_rest_server(self) -> str:
         """
         Handles the Restic REST server destination.
 
@@ -102,20 +110,25 @@ class DestinationHandler:
         """
         return self.destination
 
-    def unmount(self):
+    def unmount(self) -> None:
         """
         Unmounts the drive if it was mounted.
         """
         if self.destination_type == "volume" and self.do_i_mounted:
             self.mounter.unmount(self.destination)
 
-    def __enter__(self):
+    def __enter__(self) -> str:
         """
         Support for context manager entry. Attempts to mount the drive if necessary.
         """
         return self.mount()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """
         Support for context manager exit. Cleans up by unmounting if necessary.
         """

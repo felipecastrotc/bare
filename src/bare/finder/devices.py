@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Any
+
 from .gocryptfs import GocryptfsFinder
 from .physical import DriveFinder
 from .rclone import RcloneFinder
@@ -9,10 +13,10 @@ class DeviceFinder:
     Dynamically selects the appropriate method for the current operating system.
     """
 
-    def __init__(self, label=None):
+    def __init__(self, label: str | None = None) -> None:
         self.label = label
 
-    def get_all_devices(self):
+    def get_all_devices(self) -> list[dict[str, Any]]:
         """
         Retrieves a list of all drives.
 
@@ -26,7 +30,9 @@ class DeviceFinder:
             drives.extend(s.get_drives())
         return drives
 
-    def find_device(self, label=None, name=None, path=None):
+    def find_device(
+        self, label: str | None = None, name: str | None = None, path: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Searches both physical and rclone drives for a device matching the given label or name or mountpoint (path).
 

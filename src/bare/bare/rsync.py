@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import os
+from typing import Any
 
 from ..utils import dict2args, execute_command_test
 from .base import Base
@@ -10,13 +13,13 @@ logger = logging.getLogger(__name__)
 class Rsync(Base):
     def __init__(
         self,
-        path,
-        rsync_folder="rsync",
-        file_options="axHAX",
-        hostname=None,
-        name=None,
-        check_hostname=False,
-    ):
+        path: str,
+        rsync_folder: str = "rsync",
+        file_options: str = "axHAX",
+        hostname: str | None = None,
+        name: str | None = None,
+        check_hostname: bool = False,
+    ) -> None:
         super().__init__(hostname, name, check_hostname)
         # Location of the folder to receive the backup
         self.dest = os.path.join(path, hostname, rsync_folder)
@@ -25,7 +28,13 @@ class Rsync(Base):
         self.base_cmd = f"rsync -{file_options} --info=progress2 --numeric-ids"
         self.base_cmd = self.base_cmd + " {} {} " + self.dest
 
-    def run(self, source_path, args=None, mask=None, dry_run=False):
+    def run(
+        self,
+        source_path: str,
+        args: dict[str, Any] | None = None,
+        mask: str | None = None,
+        dry_run: bool = False,
+    ) -> str:
         if args is None:
             args = {}
         logger.info(f"Context: {self.name}")
@@ -36,13 +45,13 @@ class Rsync(Base):
 
     def backup(
         self,
-        source,
-        args=None,
-        delete=True,
-        ignore_error=True,
-        mask=None,
-        dry_run=False,
-    ):
+        source: str,
+        args: dict[str, Any] | None = None,
+        delete: bool = True,
+        ignore_error: bool = True,
+        mask: str | None = None,
+        dry_run: bool = False,
+    ) -> None:
         if args is None:
             args = {}
         if delete:

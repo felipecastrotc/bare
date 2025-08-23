@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import logging
 import os
 import platform
+from collections.abc import Callable
 from shutil import which
+from typing import Any
 
 from ..utils import dict2args, execute_command
 from .base import Base
@@ -12,15 +16,15 @@ logger = logging.getLogger(__name__)
 class Restic(Base):
     def __init__(
         self,
-        path,
-        password,
-        restic_folder="restic",
-        hostname=None,
-        name=None,
-        check_hostname=True,
-        runner="restic",
-        bin_path=None,
-    ):
+        path: str,
+        password: str,
+        restic_folder: str = "restic",
+        hostname: str | None = None,
+        name: str | None = None,
+        check_hostname: bool = True,
+        runner: str = "restic",
+        bin_path: str | None = None,
+    ) -> None:
         super().__init__(hostname, name, check_hostname)
         # Restic password -> TODO: better way to store the password
         self.env["RESTIC_PASSWORD"] = password
@@ -48,7 +52,14 @@ class Restic(Base):
         else:
             self.repo = f"-r {path}"
 
-    def run(self, cmd, args=None, mask=None, dry_run=False, custom_runner=None):
+    def run(
+        self,
+        cmd: str,
+        args: dict[str, Any] | None = None,
+        mask: str | None = None,
+        dry_run: bool = False,
+        custom_runner: str | None = None,
+    ) -> str:
         if args is None:
             args = {}
         logger.info(f"Context: {self.name}")
@@ -62,10 +73,16 @@ class Restic(Base):
         logger.info(cmd)
         return execute_command(cmd, self.env, mask, ignore_error=True)
 
-    def init(self):
+    def init(self) -> None:
         self.run("init")
 
-    def backup(self, source, args=None, mask=None, dry_run=False):
+    def backup(
+        self,
+        source: str,
+        args: dict[str, Any] | None = None,
+        mask: str | None = None,
+        dry_run: bool = False,
+    ) -> None:
         if args is None:
             args = {}
         if self.hostname is not None:
@@ -89,7 +106,12 @@ class Restic(Base):
                 # Uses proot
                 self.run(base_cmd, args, mask, dry_run)
 
-    def forget(self, options, hostname_filter=True, dry_run=False):
+    def forget(
+        self,
+        options: dict[str, Any],
+        hostname_filter: bool = True,
+        dry_run: bool = False,
+    ) -> None:
         # Base command for forgetting and pruning backups
         base_cmd = "forget --prune "
         # Append the host filter to the command if the hostname is set
@@ -98,12 +120,18 @@ class Restic(Base):
 
         self.run(base_cmd, args=options, dry_run=dry_run)
 
-    def check(self, options, dry_run=False):
+    def check(self, options: dict[str, Any], dry_run: bool = False) -> None:
         # Base command for forgetting and pruning backups
         base_cmd = "check "
         self.run(base_cmd, args=options, dry_run=dry_run)
 
-    def mount(self, destination, args=None, mask=None, dry_run=False):
+    def mount(
+        self,
+        destination: str,
+        args: dict[str, Any] | None = None,
+        mask: str | None = None,
+        dry_run: bool = False,
+    ) -> None:
         # Currently rustic does not support the mount option.
         if args is None:
             args = {}
@@ -111,9 +139,9 @@ class Restic(Base):
             f"mount {destination}", args, mask, dry_run, custom_runner=self.restic_cmd
         )
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Callable[..., str]:
         # This method is called when an undefined attribute/method is accessed
-        def method(**kwargs):
+        def method(**kwargs: Any) -> str:
             # Redirect the call to the 'run' method with the method name as the command
             return self.run(name, args=kwargs)
 

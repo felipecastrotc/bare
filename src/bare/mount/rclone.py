@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import logging
 import os
 import platform
+from typing import Any
 
 from ..utils import execute_command
 from .base import MountBase
@@ -14,7 +17,9 @@ class MountDriveRclone(MountBase):
     Supports operations on Linux and Darwin operating systems.
     """
 
-    def mount(self, label=None, device=None):
+    def mount(
+        self, label: str | None = None, device: dict[str, Any] | None = None
+    ) -> bool:
         """
         Mounts a remote filesystem identified by a label or device dictionary to a temporary directory.
 
@@ -43,7 +48,12 @@ class MountDriveRclone(MountBase):
             logger.info(f"Device is already mounted at: {device['mountpoints']}")
             return False
 
-    def unmount(self, label=None, device=None, path=None):
+    def unmount(
+        self,
+        label: str | None = None,
+        device: dict[str, Any] | None = None,
+        path: str | None = None,
+    ) -> None:
         """
         Unmounts a remote filesystem identified by a label, device dictionary, or mount path.
 

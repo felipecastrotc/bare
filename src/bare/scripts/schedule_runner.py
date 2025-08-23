@@ -4,6 +4,8 @@ Backup launcher for bare backup (custom CLI) inside micromamba environment.
 Handles daily execution, logging, Tailscale startup, and connectivity checks.
 """
 
+from __future__ import annotations
+
 import datetime as dt
 import logging
 import os
