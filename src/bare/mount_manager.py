@@ -1,5 +1,5 @@
-import platform
 import os
+import platform
 
 from .finder.devices import DeviceFinder
 from .mount.base import MountBase
@@ -22,7 +22,7 @@ class MountPointFinder:
 
     def _find_device_unix(self, mount_point):
         """Find the device mounted at `mount_point` for Unix/Linux."""
-        with open("/proc/mounts", "r") as mounts:
+        with open("/proc/mounts") as mounts:
             for line in mounts:
                 parts = line.split()
                 if parts[1] == mount_point:
@@ -97,7 +97,7 @@ class MountManager:
         Raises an exception if a device cannot be found.
         """
         mounted_devices = self.get_mounted_devices()
-        all_devices = self.finder.find_device()
+        self.finder.find_device()
 
         for _, path in mounted_devices.items():
             self.mounter.unmount(path=path)

@@ -1,7 +1,6 @@
 import os
-
-import tempfile
 import stat
+import tempfile
 
 from ..finder.devices import DeviceFinder
 

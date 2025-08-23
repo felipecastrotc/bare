@@ -1,7 +1,10 @@
+import logging
 import platform
 
-from .base import MountBase
 from ..utils import execute_command
+from .base import MountBase
+
+logger = logging.getLogger(__name__)
 
 
 class MountDriveLinux(MountBase):
@@ -24,7 +27,7 @@ class MountDriveLinux(MountBase):
             command = f"udisksctl mount -b /dev/{device_name}"
             execute_command(command)
         except Exception as e:
-            raise Exception(f"Failed to mount /dev/{device_name}: {e}")
+            raise RuntimeError(f"Failed to mount /dev/{device_name}: {e}") from e
 
     def unmount(self, path):
         """
@@ -42,11 +45,15 @@ class MountDriveLinux(MountBase):
         except Exception as e:
             msg = e.stderr.decode("utf-8").rstrip()
             if "busy" in msg:
-                print(f"The device at {path} is being used and cannot be unmounted:")
-                print(msg)
-                print("Please close any applications that might be using the device.")
+                logger.info(
+                    f"The device at {path} is being used and cannot be unmounted:"
+                )
+                logger.info(msg)
+                logger.info(
+                    "Please close any applications that might be using the device."
+                )
             else:
-                raise Exception(f"Failed to unmount {path}: {msg}")
+                raise RuntimeError(f"Failed to unmount {path}: {msg}") from e
 
 
 class MountDriveDarwin(MountBase):
@@ -70,7 +77,7 @@ class MountDriveDarwin(MountBase):
             cmd = f"diskutil mount -mountPoint {path} /dev/{device_name}"
             execute_command(cmd)
         except Exception as e:
-            raise Exception(f"Failed to mount /dev/{device_name}: {e}")
+            raise RuntimeError(f"Failed to mount /dev/{device_name}: {e}") from e
 
     def unmount(self, path):
         """
@@ -86,20 +93,20 @@ class MountDriveDarwin(MountBase):
             cmd = f"diskutil unmount {path}"
             execute_command(cmd)
         except Exception as e:
-            raise Exception(f"Failed to unmount {path}: {e}")
+            raise RuntimeError(f"Failed to unmount {path}: {e}") from e
 
 
 class MountDriveWin(MountBase):
     # TODO:
     def mount(self, device_name):
-        path = self.generate_temporary_directory()
+        self.generate_temporary_directory()
         # Create a diskpart script to assign a drive letter
         # script = f"select volume {volume}\nassign letter={drive_letter}"
         # process = subprocess.run(['diskpart'], input=script.encode(), check=True)
         # execute_command(cmd)
 
     def unmount(self, device_name):
-        path = self.generate_temporary_directory()
+        self.generate_temporary_directory()
         # Create a diskpart script to assign a drive letter
         # script = f"select volume {volume}\nassign letter={drive_letter}"
         # process = subprocess.run(['diskpart'], input=script.encode(), check=True)
@@ -127,7 +134,7 @@ class MountDrivePhysical(MountBase):
             NotImplementedError: If the mounting functionality is not implemented for the OS.
         """
         if device is None and name is None:
-            raise Exception("You should pass the device dict or the drive name")
+            raise ValueError("You should pass the device dict or the drive name")
 
         device = device or self.finder.find_device(name=name)
 
@@ -136,7 +143,7 @@ class MountDrivePhysical(MountBase):
             mounter.mount(device["name"])
             return True
         else:
-            print(f"Device is already mounted at: {device['mountpoints']}")
+            logger.info(f"Device is already mounted at: {device['mountpoints']}")
             return False
 
     def unmount(self, name=None, device=None, path=None):
@@ -154,7 +161,7 @@ class MountDrivePhysical(MountBase):
             NotImplementedError: If the unmounting functionality is not implemented for the OS.
         """
         if device is None and name is None and path is None:
-            raise Exception(
+            raise ValueError(
                 "You should pass the device dict, the drive name, or the path"
             )
 
@@ -167,7 +174,7 @@ class MountDrivePhysical(MountBase):
             mounter.unmount(path)
             self.clean_device_temporary_directory(device=device, path=path)
         else:
-            print("Device is already unmounted or no mount point found.")
+            logger.info("Device is already unmounted or no mount point found.")
 
     def _get_mounter(self):
         """

@@ -1,15 +1,20 @@
 #!/usr/bin/python
 
-import os
-import yaml
 import argparse
-import copy
 import collections.abc
-from bare import Restic, Rsync, DestinationHandler
-from bare import MountManager
+import copy
+import logging
+import os
+
+import yaml
+
+from bare import DestinationHandler, MountManager, Restic, Rsync
+
 from .utils import get_hostname
 
 # from utils import get_hostname, Backup, Restic, Mount, DestinationHandler
+
+logger = logging.getLogger()
 
 
 def update_nested(d, u):
@@ -36,8 +41,6 @@ default_var = {
         "args": {},
         "enable": True,
         "restic_folder": "restic",
-        "runner": "restic",
-        "enable": True,
         "forget": None,
         "skip-maintain": False,
     },
@@ -65,7 +68,7 @@ def get_restic_instance(config, destination_path, name, destination_type=None):
         check_hostname=config["check_hostname"],
         runner=config["restic"]["runner"],
     )
-    print(config)
+    logger.info(config)
     return restic_instance
 
 
@@ -84,15 +87,15 @@ def post_backup_restic(restic_instance, config):
     if not config["restic"]["skip-maintain"]:
         forget_config = config.get("restic", {}).get("forget")
         if isinstance(forget_config, dict):
-            print("Restic: Prunning old snapshots...")
+            logger.info("Restic: Prunning old snapshots...")
             restic_instance.forget(forget_config)
-            print("Restic: Finished prunning old snapshots!")
+            logger.info("Restic: Finished prunning old snapshots!")
 
         check_config = config.get("restic", {}).get("check")
         if isinstance(check_config, dict):
-            print("Restic: Checking repository...")
+            logger.info("Restic: Checking repository...")
             restic_instance.check(check_config)
-            print("Restic: Finished checking repository!")
+            logger.info("Restic: Finished checking repository!")
 
 
 def backup(var):
@@ -101,12 +104,12 @@ def backup(var):
     Restic and Rsync backups based on the configuration.
     """
     for name, config in var.items():
-        print(f"Starting backup for {name} to {config['destination']}")
+        logger.info(f"Starting backup for {name} to {config['destination']}")
         try:
             dh = DestinationHandler(config["destination"])
             with dh as destination_path:
                 if config["restic"]["enable"]:
-                    print("Starting restic backup!")
+                    logger.info("Starting restic backup!")
                     restic_instance = get_restic_instance(
                         config, destination_path, name, dh.destination_type
                     )
@@ -115,27 +118,26 @@ def backup(var):
                     for i, source in enumerate(config["source"]):
                         mask_i = mask[i] if isinstance(mask, list) else mask
                         restic_instance.backup(source, args, mask_i)
-                    print("Restic backup done!")
+                    logger.info("Restic backup done!")
                     post_backup_restic(restic_instance, config)
                 if (
                     config["rsync"]["enable"]
                     and dh.destination_type != "restic_rest_server"
                 ):
-                    print("Starting rsync backup!")
+                    logger.info("Starting rsync backup!")
                     rsync = get_rsync_instance(config, destination_path, name)
                     mask = config["mask"]
                     args = config["rsync"]["args"]
                     for i, source in enumerate(config["source"]):
                         mask_i = mask[i] if isinstance(mask, list) else mask
                         rsync.backup(source, args, mask_i)
-                    print("Rsync backup done!")
+                    logger.info("Rsync backup done!")
                 elif config["rsync"]["enable"]:
-                    print("The destination is a Restic rest server")
+                    logger.info("The destination is a Restic rest server")
         except AssertionError as e:
-            print(f"Error during backup: {e}")
-            if "Unable to find" in str(e):
-                if len(var) > 1:
-                    print("Skipping to the next drive.")
+            logger.info(f"Error during backup: {e}")
+            if "Unable to find" in str(e) and len(var) > 1:
+                logger.info("Skipping to the next drive.")
 
 
 def restic(var, unknown):
@@ -151,10 +153,9 @@ def restic(var, unknown):
                 )
                 _ = restic_instance.run(" ".join(unknown))
         except AssertionError as e:
-            print(f"Error during Restic command: {e}")
-            if "Unable to find" in str(e):
-                if len(var) > 1:
-                    print("Skipping to the next drive.")
+            logger.info(f"Error during Restic command: {e}")
+            if "Unable to find" in str(e) and len(var) > 1:
+                logger.info("Skipping to the next drive.")
 
 
 def maintain(var):
@@ -165,33 +166,32 @@ def maintain(var):
         var (dict): Dictionary with keys as item names and values as their configuration.
     """
     for name, config in var.items():
-        print(f"Starting maintenance for {name} to {config['destination']}")
+        logger.info(f"Starting maintenance for {name} to {config['destination']}")
 
         try:
             dh = DestinationHandler(config["destination"])
 
             with dh as destination_path:
-
                 if config["restic"]["enable"]:
-                    print("Maintaining restic!")
+                    logger.info("Maintaining restic!")
                     restic_instance = get_restic_instance(
                         config, destination_path, name, dh.destination_type
                     )
                     post_backup_restic(restic_instance, config)
-                    print("Restic maintenance done!")
+                    logger.info("Restic maintenance done!")
                 if (
                     config["rsync"]["enable"]
                     and dh.destination_type != "restic_rest_server"
                 ):
-                    print("NOT IMPLEMENTED YET!")
+                    logger.info("NOT IMPLEMENTED YET!")
                 elif config["rsync"]["enable"]:
-                    print("The destination is a Restic rest server")
+                    logger.info("The destination is a Restic rest server")
 
         except AssertionError as e:
-            print(f"Error during backup: {e}")
+            logger.info(f"Error during backup: {e}")
 
             if "Unable to find" in str(e) and len(var) > 1:
-                print("Skipping to the next drive.")
+                logger.info("Skipping to the next drive.")
 
 
 def umount(var):
@@ -203,14 +203,14 @@ def umount(var):
         mount_mgmt.umount_all()
         mount_mgmt.clean()
     except AssertionError as e:
-        print(f"Error during unmount: {e}")
+        logger.info(f"Error during unmount: {e}")
 
 
 def list_func(var, unknown):
     """
     List all available sessions and configurations.
     """
-    print(yaml.dump(list(var.keys())))
+    logger.info(yaml.dump(list(var.keys())))
 
 
 def router(cmd, var, unknown, target):
@@ -344,7 +344,7 @@ def main():
     )
 
     # List parser
-    listparser = subparser.add_parser(
+    subparser.add_parser(
         "list",
         help="List the sessions and configurations.",
     )
@@ -369,7 +369,7 @@ def main():
 
     # Load the session configuration
     default_session = "session.yml"
-    default_home = os.path.expanduser(f"~/.config/bare/{default_session}")
+    os.path.expanduser(f"~/.config/bare/{default_session}")
 
     session_file = var.get("session", default_session)
     session_home = os.path.expanduser(f"~/.config/bare/{session_file}")

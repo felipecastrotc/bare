@@ -1,6 +1,10 @@
+import logging
 import os
+
+from ..utils import dict2args, execute_command_test
 from .base import Base
-from ..utils import execute_command, dict2args, execute_command_test
+
+logger = logging.getLogger(__name__)
 
 
 class Rsync(Base):
@@ -21,16 +25,26 @@ class Rsync(Base):
         self.base_cmd = f"rsync -{file_options} --info=progress2 --numeric-ids"
         self.base_cmd = self.base_cmd + " {} {} " + self.dest
 
-    def run(self, source_path, args={}, mask=None, dry_run=False):
-        print("Context: {}".format(self.name))
+    def run(self, source_path, args=None, mask=None, dry_run=False):
+        if args is None:
+            args = {}
+        logger.info(f"Context: {self.name}")
         cmd = self.base_cmd.format(dict2args(args), source_path)
         if dry_run:
             cmd += " --dry-run"
         return execute_command_test(cmd, None, mask)
 
     def backup(
-        self, source, args={}, delete=True, ignore_error=True, mask=None, dry_run=False
+        self,
+        source,
+        args=None,
+        delete=True,
+        ignore_error=True,
+        mask=None,
+        dry_run=False,
     ):
+        if args is None:
+            args = {}
         if delete:
             args["delete"] = ""
         if ignore_error:

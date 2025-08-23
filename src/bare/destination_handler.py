@@ -1,7 +1,7 @@
 import os
 from urllib.parse import urlparse
+
 from .mount.drive import MountDrive
-from .finder.devices import DeviceFinder
 
 
 class DestinationHandler:

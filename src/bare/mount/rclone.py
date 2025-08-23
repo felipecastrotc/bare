@@ -1,8 +1,11 @@
-import platform
+import logging
 import os
+import platform
 
-from .base import MountBase
 from ..utils import execute_command
+from .base import MountBase
+
+logger = logging.getLogger(__name__)
 
 
 class MountDriveRclone(MountBase):
@@ -30,14 +33,14 @@ class MountDriveRclone(MountBase):
 
         if not device["mountpoints"]:
             path = self.generate_temporary_directory()
-            assert os.path.exists(
-                path
-            ), "Failed to create a temporary folder for rclone mount"
+            assert os.path.exists(path), (
+                "Failed to create a temporary folder for rclone mount"
+            )
 
             execute_command(f"rclone mount {device['label']} {path} --daemon")
             return True
         else:
-            print(f"Device is already mounted at: {device['mountpoints']}")
+            logger.info(f"Device is already mounted at: {device['mountpoints']}")
             return False
 
     def unmount(self, label=None, device=None, path=None):
@@ -64,7 +67,7 @@ class MountDriveRclone(MountBase):
             if device["mountpoints"]:
                 unmount_path = device["mountpoints"][0]
             else:
-                print("The rclone drive is already unmounted!!")
+                logger.info("The rclone drive is already unmounted!!")
                 return None
         else:
             unmount_path = path
