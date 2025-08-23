@@ -22,6 +22,7 @@ Repository = "https://github.com/felipecastrotc/bare"
 
 [project.scripts]
 bare = "src.bare.main:main"
+bare_runner = "src.bare.scripts.schedule_runner:main"
 
 [tool.hatch.version]
 source = "vcs"
