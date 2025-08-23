@@ -18,6 +18,9 @@ You must have the following before proceeding:
 
 ---
 
+NOTE: NOT TESTED
+TODO: improve and review the step by step
+
 ## ⚙️ Setup on Linux (with systemd)
 
 ### 1. ✅ Install Dependencies
