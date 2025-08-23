@@ -8,13 +8,15 @@ import os
 
 import yaml
 
-from bare import DestinationHandler, MountManager, Restic, Rsync
+from . import DestinationHandler, MountManager, Restic, Rsync
+from .utils import InfoOnlyFormatter, get_hostname
 
-from .utils import get_hostname
+# Set up the logger
+handler = logging.StreamHandler()
+handler.setFormatter(InfoOnlyFormatter())
 
-# from utils import get_hostname, Backup, Restic, Mount, DestinationHandler
-
-logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO, handlers=[handler])
+logger = logging.getLogger(__name__)
 
 
 def update_nested(d, u):
@@ -41,6 +43,7 @@ default_var = {
         "args": {},
         "enable": True,
         "restic_folder": "restic",
+        "runner": "restic",
         "forget": None,
         "skip-maintain": False,
     },
