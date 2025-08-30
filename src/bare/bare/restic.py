@@ -39,6 +39,8 @@ class Restic(Base):
             bin_rustic = which("rustic")
         else:
             bin_restic, bin_rustic = bin_path, bin_path
+        bin_restic = "" if bin_restic is None else bin_restic
+        bin_rustic = "" if bin_rustic is None else bin_rustic
         self.restic_cmd = bin_restic + " {} {} {}"
         self.rustic_cmd = bin_rustic + " {} {} {} --password " + password
         if self.runner == "restic":
