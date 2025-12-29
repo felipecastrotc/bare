@@ -1,5 +1,13 @@
 #!/usr/bin/python
 
+"""CLI entrypoint orchestrating BARE backup flows, mounts, and helpers.
+
+This module wires argparse parsing, session resolution, dependency preflights,
+and shortcut handling for restic/rsync operations. Functions document side
+effects such as user prompts, logging, and external command execution so
+contributors can reason about control flow without reading other modules.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -33,7 +41,21 @@ RESTIC_SHORTCUTS = {"snapshots": "snapshots", "stats": "stats", "check": "check"
 
 
 def update_nested(d: dict[str, Any] | None, u: Mapping[str, Any]) -> dict[str, Any]:
-    """Recursively update a nested dictionary `d` with values from dictionary `u`."""
+    """Recursively merge mappings, preserving nested structure.
+
+    Parameters
+    ----------
+    d : dict[str, Any] or None
+        Base mapping to update; mutated in-place when provided.
+    u : Mapping[str, Any]
+        Mapping supplying overrides/insertions; nested mappings are merged
+        recursively.
+
+    Returns
+    -------
+    dict[str, Any]
+        Updated mapping containing values from both inputs.
+    """
     if d is None:
         return dict(u)
     for k, v in u.items():
@@ -69,6 +91,18 @@ default_var: dict[str, Any] = {
 
 
 def looks_like_rclone_remote(destination: str) -> bool:
+    """Check whether a destination string resembles an rclone remote.
+
+    Parameters
+    ----------
+    destination : str
+        Destination value from configuration or CLI.
+
+    Returns
+    -------
+    bool
+        True when the string appears to be an rclone remote, False otherwise.
+    """
     if destination.startswith("rest:"):
         return False
     if destination.startswith("~"):
@@ -79,6 +113,18 @@ def looks_like_rclone_remote(destination: str) -> bool:
 
 
 def is_executable_available(candidate: str | None) -> bool:
+    """Check whether a candidate binary path or name is executable.
+
+    Parameters
+    ----------
+    candidate : str or None
+        Binary name or path to test.
+
+    Returns
+    -------
+    bool
+        True when the binary exists and is executable.
+    """
     if not candidate:
         return False
     path = Path(candidate).expanduser()
@@ -88,6 +134,18 @@ def is_executable_available(candidate: str | None) -> bool:
 
 
 def collect_missing_dependencies(configs: Mapping[str, Mapping[str, Any]]) -> list[str]:
+    """Identify missing binaries required by enabled targets.
+
+    Parameters
+    ----------
+    configs : Mapping[str, Mapping[str, Any]]
+        Normalized target configs keyed by name.
+
+    Returns
+    -------
+    list[str]
+        Sorted list of binary names that are not available.
+    """
     missing: set[str] = set()
     for config in configs.values():
         restic_cfg = config.get("restic", {})
@@ -111,6 +169,25 @@ def collect_missing_dependencies(configs: Mapping[str, Mapping[str, Any]]) -> li
 def resolve_session_path(
     session_arg: str | None, env: Mapping[str, str] | None = None
 ) -> Path:
+    """Resolve a session file path from CLI arg, env var, or defaults.
+
+    Parameters
+    ----------
+    session_arg : str or None
+        Path provided via CLI flag.
+    env : Mapping[str, str], optional
+        Environment variables; defaults to `os.environ`.
+
+    Returns
+    -------
+    Path
+        Resolved, existing session file path.
+
+    Raises
+    ------
+    FileNotFoundError
+        If no candidate session file exists.
+    """
     env = env or os.environ
     env_session = env.get(DEFAULT_SESSION_ENV_VAR)
     candidates: list[Path] = []
@@ -136,6 +213,27 @@ def resolve_session_path(
 
 
 def load_session(session_path: Path) -> dict[str, Any]:
+    """Load and parse a YAML session file into a mapping.
+
+    Parameters
+    ----------
+    session_path : Path
+        Path to the session YAML file.
+
+    Returns
+    -------
+    dict[str, Any]
+        Parsed session configuration keyed by target name.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file does not exist.
+    ValueError
+        If YAML cannot be parsed or is not a mapping.
+    OSError
+        If the file cannot be read.
+    """
     try:
         with session_path.open() as f:
             session = yaml.safe_load(f) or {}
@@ -154,6 +252,18 @@ def load_session(session_path: Path) -> dict[str, Any]:
 
 
 def normalize_config(config: Mapping[str, Any]) -> dict[str, Any]:
+    """Merge defaults into a target config and normalize source/hostname.
+
+    Parameters
+    ----------
+    config : Mapping[str, Any]
+        Raw target configuration from the session file.
+
+    Returns
+    -------
+    dict[str, Any]
+        Normalized configuration with defaults applied.
+    """
     merged = update_nested(copy.deepcopy(default_var), config)
     if not merged.get("hostname"):
         merged["hostname"] = get_hostname()
@@ -166,6 +276,21 @@ def normalize_config(config: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def build_cli_config(args: argparse.Namespace, command: str) -> dict[str, Any] | None:
+    """Build a single-target config from CLI flags for ad-hoc backups.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed CLI arguments.
+    command : str
+        Selected subcommand (used to guard CLI-only config usage).
+
+    Returns
+    -------
+    dict[str, Any] or None
+        Normalized CLI configuration when destination is provided, otherwise
+        None.
+    """
     destination = getattr(args, "destination", None)
     if not destination:
         return None
@@ -191,6 +316,23 @@ def build_configs(
     cli_config: dict[str, Any] | None,
     target: str | None,
 ) -> dict[str, dict[str, Any]]:
+    """Combine session and optional CLI config, filtering to a target.
+
+    Parameters
+    ----------
+    session : Mapping[str, Any]
+        Session data loaded from YAML.
+    cli_config : dict[str, Any] or None
+        CLI-only configuration when running a single ad-hoc target.
+    target : str or None
+        Optional target name filter.
+
+    Returns
+    -------
+    dict[str, dict[str, Any]]
+        Normalized configs keyed by target, excluding entries without
+        destinations.
+    """
     configs: dict[str, dict[str, Any]] = {}
     for name, config in session.items():
         if not isinstance(config, Mapping):
@@ -208,6 +350,18 @@ def build_configs(
 
 
 def summarize_backup_plan(configs: Mapping[str, Mapping[str, Any]]) -> list[str]:
+    """Summarize planned backups for logging.
+
+    Parameters
+    ----------
+    configs : Mapping[str, Mapping[str, Any]]
+        Target configurations keyed by name.
+
+    Returns
+    -------
+    list[str]
+        Human-readable summary lines for each target.
+    """
     lines = []
     for name, cfg in configs.items():
         engines: list[str] = []
@@ -223,11 +377,30 @@ def summarize_backup_plan(configs: Mapping[str, Mapping[str, Any]]) -> list[str]
 
 
 def prompt_confirmation(message: str) -> bool:
+    """Prompt the user for confirmation.
+
+    Parameters
+    ----------
+    message : str
+        Prompt message to display.
+
+    Returns
+    -------
+    bool
+        True when user responds with yes, False otherwise.
+    """
     reply = input(f"{message} [y/N]: ").strip().lower()  # noqa: S322
     return reply in ("y", "yes")
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Create the CLI argument parser with subcommands and examples.
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Parser with all BARE subcommands and shortcuts configured.
+    """
     examples = textwrap.dedent(
         """
         Examples:
@@ -410,6 +583,24 @@ def get_restic_instance(
     name: str,
     destination_type: str | None = None,
 ) -> Restic:
+    """Instantiate Restic helper for a target.
+
+    Parameters
+    ----------
+    config : dict[str, Any]
+        Normalized target configuration.
+    destination_path : str
+        Mounted destination path.
+    name : str
+        Target name (used for tagging/logging).
+    destination_type : str or None
+        Destination classification from `DestinationHandler`.
+
+    Returns
+    -------
+    Restic
+        Configured Restic helper.
+    """
     restic_folder = (
         ""
         if destination_type == "restic_rest_server"
@@ -430,6 +621,22 @@ def get_restic_instance(
 def get_rsync_instance(
     config: dict[str, Any], destination_path: str, name: str
 ) -> Rsync:
+    """Instantiate Rsync helper for a target.
+
+    Parameters
+    ----------
+    config : dict[str, Any]
+        Normalized target configuration.
+    destination_path : str
+        Mounted destination path.
+    name : str
+        Target name (used for tagging/logging).
+
+    Returns
+    -------
+    Rsync
+        Configured Rsync helper.
+    """
     return Rsync(
         destination_path,
         rsync_folder=config["rsync"]["rsync_folder"],
@@ -442,6 +649,17 @@ def get_rsync_instance(
 def post_backup_restic(
     restic_instance: Restic, config: dict[str, Any], dry_run: bool
 ) -> None:
+    """Run optional restic forget/check maintenance after backups.
+
+    Parameters
+    ----------
+    restic_instance : Restic
+        Restic helper bound to the destination.
+    config : dict[str, Any]
+        Target configuration containing maintenance directives.
+    dry_run : bool
+        When True, only logs the intended actions.
+    """
     if dry_run:
         logger.info("Would run restic forget/check maintenance.")
         return
@@ -460,6 +678,17 @@ def post_backup_restic(
 
 
 def backup(configs: dict[str, dict[str, Any]], dry_run: bool, assume_yes: bool) -> None:
+    """Execute backups for configured targets with confirmation and dry-run.
+
+    Parameters
+    ----------
+    configs : dict[str, dict[str, Any]]
+        Normalized target configurations keyed by name.
+    dry_run : bool
+        When True, only logs intended mounts and backup commands.
+    assume_yes : bool
+        When True, skips confirmation prompts.
+    """
     if not configs:
         logger.info("No backup targets found in the session file.")
         return
@@ -538,6 +767,17 @@ def run_restic_command(
     command: str,
     dry_run: bool,
 ) -> None:
+    """Run a restic command (or shortcut) across targets.
+
+    Parameters
+    ----------
+    configs : dict[str, dict[str, Any]]
+        Normalized target configurations keyed by name.
+    command : str
+        Restic command string to execute (e.g., `snapshots --tag weekly`).
+    dry_run : bool
+        When True, only logs intended restic commands.
+    """
     if not configs:
         logger.info("No restic targets found in the session file.")
         return
@@ -574,6 +814,13 @@ def run_restic_command(
 
 
 def maintain(configs: dict[str, dict[str, Any]]) -> None:
+    """Perform maintenance tasks defined in the session file.
+
+    Parameters
+    ----------
+    configs : dict[str, dict[str, Any]]
+        Normalized target configurations keyed by name.
+    """
     if not configs:
         logger.info("No maintenance targets found in the session file.")
         return
@@ -602,6 +849,17 @@ def maintain(configs: dict[str, dict[str, Any]]) -> None:
 
 
 def umount() -> None:
+    """Unmount and clean up BARE-managed temporary mounts.
+
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    Logs errors but does not raise on unmount failures to allow best-effort
+    cleanup.
+    """
     try:
         mount_mgmt = MountManager()
         mount_mgmt.umount_all()
@@ -611,6 +869,13 @@ def umount() -> None:
 
 
 def list_func(configs: dict[str, dict[str, Any]]) -> None:
+    """List available targets from the session.
+
+    Parameters
+    ----------
+    configs : dict[str, dict[str, Any]]
+        Normalized target configurations keyed by name.
+    """
     if not configs:
         logger.info("No targets found in the session file.")
         return
@@ -618,6 +883,18 @@ def list_func(configs: dict[str, dict[str, Any]]) -> None:
 
 
 def build_restic_command_from_args(args: argparse.Namespace) -> str:
+    """Construct a restic command string from parsed CLI args.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed CLI arguments.
+
+    Returns
+    -------
+    str
+        Restic command string (may be empty when no command provided).
+    """
     restic_args: Iterable[str] = getattr(args, "restic_args", []) or []
     if args.command == "snapshots" or getattr(args, "snapshots", False):
         base = RESTIC_SHORTCUTS["snapshots"]
@@ -637,6 +914,12 @@ def build_restic_command_from_args(args: argparse.Namespace) -> str:
 
 
 def main() -> None:
+    """Parse CLI args, resolve configs, and dispatch subcommands.
+
+    Returns
+    -------
+    None
+    """
     parser = build_parser()
     args = parser.parse_args()
 
