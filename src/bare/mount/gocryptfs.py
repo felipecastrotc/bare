@@ -24,6 +24,7 @@ class MountGocryptfs(MountBase):
         gocryptfs_password: str,
         gocryptfs_folder: str = "",
     ) -> None:
+        super().__init__()
         self.gofs = Gocryptfs(path, gocryptfs_password, gocryptfs_folder)
 
     def mount(self, label: str, device: dict[str, Any] | None = None) -> bool:
@@ -93,7 +94,10 @@ class MountGocryptfs(MountBase):
         # Determine the unmount path
         if path is None:
             device = device or self.finder.find_device(label=label)
-            if device["mountpoints"]:
+            if isinstance(device, list):
+                device = device[0] if device else None
+
+            if device and device["mountpoints"]:
                 unmount_path = device["mountpoints"][0]
             else:
                 logger.info("The rclone drive is already unmounted!!")

@@ -142,6 +142,11 @@ class MountDrivePhysical(MountBase):
             raise ValueError("You should pass the device dict or the drive name")
 
         device = device or self.finder.find_device(name=name)
+        if isinstance(device, list):
+            device = device[0] if device else None
+
+        if device is None:
+            raise ValueError("No device found with the provided name")
 
         if not device["mountpoints"]:
             mounter = self._get_mounter()
@@ -177,7 +182,12 @@ class MountDrivePhysical(MountBase):
 
         if path is None:
             device = device or self.finder.find_device(name=name)
-            path = device["mountpoints"][0] if device["mountpoints"] else None
+            if isinstance(device, list):
+                device = device[0] if device else None
+
+            path = (
+                device["mountpoints"][0] if device and device["mountpoints"] else None
+            )
 
         if path:
             mounter = self._get_mounter()
