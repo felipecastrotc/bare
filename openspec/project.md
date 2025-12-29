@@ -17,6 +17,14 @@ BARE is a Python CLI that automates backups across Linux, macOS, Android/Termux 
 - Keep dependencies minimal and favor stdlib; short, focused functions; small files
 - Pre-commit is available; run Ruff (`ruff check . --fix`, `ruff format .`) before commits
 
+### Documentation Standards
+- NumPy docstring style is required for public modules, classes, and functions.
+- Docstrings describe intent, constraints, side effects, and errors when relevant.
+- Do not include type information in docstrings.
+- Inline comments are only for non-obvious logic or platform/safety concerns.
+- Avoid restating obvious behavior already clear from code.
+- These documentation defaults apply to all tasks/changes unless a spec explicitly overrides them.
+
 ### Architecture Patterns
 - Thin CLI in `src/bare/main.py` dispatches to command handlers (backup, restic passthrough, unmount, list)
 - Configuration-driven: YAML sessions feed orchestrators that prepare destinations, mount/unmount resources, then call Restic/Rsync helpers

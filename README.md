@@ -62,6 +62,7 @@ This will install the `bare` package along with its dependencies.
 ### Basic Commands
 
 The main script provides several subcommands for managing backups, Restic commands, unmounting resources, and listing configurations.
+BARE looks for a session file at `~/.config/bare/session.yml` by default; override with `--session` or set `BARE_SESSION=/path/to/session.yml`.
 
 #### 1. Backup
 
@@ -69,6 +70,12 @@ Perform a backup using the configuration provided in the `session.yml` file or c
 
 ```bash
 bare backup
+```
+
+Backups prompt for confirmation before running. Use `--yes` to skip the prompt (for automation) or `--dry-run` to print the planned mounts/commands without invoking restic or rsync:
+
+```bash
+bare backup --session ~/.config/bare/session.yml --target photos --dry-run
 ```
 
 If the destination is specified as a volume label or an rclone name, BARE will automatically mount the volume or rclone remote before starting the backup and unmount it afterward.
@@ -80,6 +87,8 @@ Run a Restic command against the configured backups without needing to manage th
 ```bash
 bare restic snapshots
 ```
+
+Common operations have shortcuts; for example `bare snapshots` lists snapshots for all configured targets and `bare restic --stats` runs `restic stats` without typing the full command string.
 
 #### 3. Umount
 
