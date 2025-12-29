@@ -34,6 +34,7 @@ class Backup(Base):
         restic_password: str | None = None,
         hostname: str | None = None,
         name: str | None = None,
+        storage: DestinationHandler | None = None,
     ) -> None:
         """
         Initializes the backup with necessary parameters.
@@ -47,10 +48,12 @@ class Backup(Base):
             name (str, optional): Name to identify the backup set.
         """
         super().__init__(hostname, name, True)
-        if vol_label:
-            self.storage = DestinationHandler(vol_label=vol_label)
+        if storage is not None:
+            self.storage = storage
+        elif vol_label:
+            self.storage = DestinationHandler(vol_label)
         elif destination:
-            self.storage = DestinationHandler(abs_path=destination)
+            self.storage = DestinationHandler(destination)
         else:
             raise ValueError("Either 'destination' or 'vol_label' must be provided.")
 

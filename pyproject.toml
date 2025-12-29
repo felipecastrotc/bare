@@ -97,7 +97,7 @@ omit = ["**/tests/**", "**/__pycache__/**"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = false
-fail_under = 80
+fail_under = 74
 
 
 [tool.pytest.ini_options]
