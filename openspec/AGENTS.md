@@ -453,4 +453,29 @@ openspec validate --strict # Is it correct?
 openspec archive <change-id> [--yes|-y]  # Mark complete (add --yes for automation)
 ```
 
-Remember: Specs are truth. Changes are proposals. Keep them in sync.
+## ENFORCEMENT RULES (HIGHEST PRIORITY)
+
+The following rules are mandatory and override task instructions if there is a conflict.
+
+### Docstrings
+- Every public module, class, function, and method MUST have a NumPy-style docstring (Python code).
+- Docstrings MUST describe intent, constraints, side effects, and error conditions when relevant.
+- Docstrings MUST NOT include type information.
+- Docstrings MUST NOT restate obvious behavior already clear from names or signatures.
+
+### NumPy structure
+- One-line summary.
+- Optional short paragraph only when it adds non-obvious context.
+- Include only applicable sections: Parameters, Returns, Yields, Raises, Notes, Examples.
+- The "Raises" section MUST reflect only exceptions that can actually propagate.
+
+### Inline comments
+- Inline comments MUST be added for non-obvious logic, platform-specific behavior,
+  or safety/cleanup reasoning.
+- Inline comments MUST NOT narrate what the code is already expressing.
+
+### Verification step
+Before finalizing output, you MUST verify that for each edited symbol:
+- Public APIs have a NumPy docstring (Python code).
+- Cleanup guarantees or failure behavior are documented when relevant.
+- No redundant or “obvious” commentary was added.
