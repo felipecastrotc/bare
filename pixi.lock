@@ -191,8 +191,8 @@ packages:
   timestamp: 1650670423406
 - pypi: ./
   name: bare
-  version: 0.1.1.dev14+g9f1f991d0
-  sha256: 516df97e3dd20f3b44126de78d45cc3f72aeeb5998e1d8fa6bbdfd2bf8fcc0af
+  version: 0.1.1.dev18+gaeaf5341c
+  sha256: c0b010493696c301fbb6ed541f6ba2636a53f57706180b1b76f07253981b733a
   requires_dist:
   - pyyaml>=6.0.2,<7
   - mkdocs>=1.6,<2 ; extra == 'dev'
