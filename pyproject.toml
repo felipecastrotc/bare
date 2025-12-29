@@ -92,13 +92,16 @@ line-ending = "lf"
 [tool.coverage.run]
 branch = true
 source = ["src/bare"]
+omit = ["**/tests/**", "**/__pycache__/**"]
 
 [tool.coverage.report]
 show_missing = true
+skip_covered = false
+fail_under = 80
 
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q --cov=src/bare --cov-report=term-missing"
 testpaths = ["tests"]
 
 [tool.mypy]
@@ -145,7 +148,8 @@ format = [
 ]
 
 # Run tests with coverage report.
-tests = "pytest --cov=your_package tests"
+tests = "pytest"
+coverage = "pytest --cov=src/bare --cov-report=term-missing --cov-report=xml --cov-report=html"
 
 # General
 setup = [{ task = "precommit-install" }, { task = "precommit-update" }]

@@ -145,6 +145,12 @@ To create a custom session, create a `session.yml` file in your home directory u
 - **rsync**: Configuration for Rsync backup, if enabled.
 - **check_hostname**: Boolean to validate the hostname during the backup.
 
+## Development
+
+### Tests and coverage
+- Run tests: `pixi run tests`
+- Run tests with coverage (terminal summary + XML + HTML in `htmlcov/`): `pixi run coverage`
+
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for setup and development guidelines.
