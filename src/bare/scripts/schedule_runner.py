@@ -194,9 +194,16 @@ def shutdown_tailscale(cfg: Config):
 
 
 def perform_backup(cfg: Config):
-    """Runs the bare backup command. It assumes that bare is installed."""
-    cmd = [cfg.bare_bin, "backup"]
-    run_command(cmd, description="bare backup")
+    """Runs the bare backup command. It assumes that bare is installed.
+
+    Raises:
+        RuntimeError: If bare exits non-zero, so the run is recorded as a failure.
+    """
+    # --yes: a scheduled run has no stdin to answer the confirmation prompt.
+    cmd = [str(cfg.bare_bin), "backup", "--yes"]
+    cp = run_command(cmd, description="bare backup")
+    if cp.returncode != 0:
+        raise RuntimeError(f"bare backup exited with {cp.returncode}")
 
 
 def load_config() -> Config:
