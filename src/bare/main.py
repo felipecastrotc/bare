@@ -78,6 +78,8 @@ default_var: dict[str, Any] = {
         "runner": "restic",
         "bin_path": None,
         "forget": None,
+        # {hostname: forget options}; replaces `forget` and never prunes unlisted hosts
+        "forget-hosts": None,
         "skip-maintain": False,
     },
     "rsync": {
@@ -646,6 +648,37 @@ def get_rsync_instance(
     )
 
 
+def forget_per_host(restic_instance: Restic, policies: Mapping[str, Any]) -> None:
+    """Apply each host's own retention policy, then prune once.
+
+    A host that is not listed is never forgotten or pruned, so a retired device
+    keeps every snapshot it ever made. Each policy is anchored on that host's own
+    snapshots: restic's keep-* rules count periods that have a snapshot, not
+    calendar time, so a host that stops backing up loses nothing more while its
+    policy stays the same.
+
+    Parameters
+    ----------
+    restic_instance : Restic
+        Restic helper bound to the destination.
+    policies : Mapping[str, Any]
+        Hostname to restic forget options (e.g. {"keep-last": 5}).
+    """
+    bad = [h for h, p in policies.items() if not isinstance(p, Mapping) or not p]
+    if bad:
+        raise ValueError(f"forget-hosts: empty or invalid policy for {', '.join(bad)}")
+    unlisted = sorted(restic_instance.hostnames() - set(policies))
+    logger.info(
+        f"Restic: hosts without a policy, never pruned: {', '.join(unlisted) or '-'}"
+    )
+    for host, policy in policies.items():
+        logger.info(f"Restic: forgetting old snapshots of {host}...")
+        restic_instance.forget(dict(policy), host=host, prune=False)
+    logger.info("Restic: pruning unreferenced data...")
+    restic_instance.prune()
+    logger.info("Restic: Finished pruning old snapshots!")
+
+
 def post_backup_restic(
     restic_instance: Restic, config: dict[str, Any], dry_run: bool
 ) -> None:
@@ -665,7 +698,10 @@ def post_backup_restic(
         return
     if not config["restic"]["skip-maintain"]:
         forget_config = config.get("restic", {}).get("forget")
-        if isinstance(forget_config, dict):
+        forget_hosts = config.get("restic", {}).get("forget-hosts")
+        if forget_hosts:
+            forget_per_host(restic_instance, forget_hosts)
+        elif isinstance(forget_config, dict):
             logger.info("Restic: Pruning old snapshots...")
             restic_instance.forget(forget_config)
             logger.info("Restic: Finished pruning old snapshots!")
