@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import platform
+import shlex
 from collections.abc import Callable
 from shutil import which
 from typing import Any
@@ -114,11 +116,15 @@ class Restic(Base):
         options: dict[str, Any],
         hostname_filter: bool = True,
         dry_run: bool = False,
+        host: str | None = None,
+        prune: bool = True,
     ) -> None:
-        # Base command for forgetting and pruning backups
-        base_cmd = "forget --prune "
-        # Append the host filter to the command if the hostname is set
-        if self.hostname is not None and hostname_filter:
+        # Base command for forgetting (and by default pruning) backups
+        base_cmd = "forget --prune " if prune else "forget "
+        # An explicit host wins; otherwise filter on this config's hostname
+        if host is not None:
+            base_cmd += "--host " + shlex.quote(host)
+        elif self.hostname is not None and hostname_filter:
             base_cmd += "--host " + self.hostname
 
         # Maintenance must fail loudly: a locked repository used to make forget and
@@ -128,6 +134,14 @@ class Restic(Base):
     def check(self, options: dict[str, Any], dry_run: bool = False) -> None:
         base_cmd = "check "
         self.run(base_cmd, args=options, dry_run=dry_run, ignore_error=False)
+
+    def prune(self, dry_run: bool = False) -> None:
+        self.run("prune", dry_run=dry_run, ignore_error=False)
+
+    def hostnames(self) -> set[str]:
+        """Hostnames that have at least one snapshot in the repository."""
+        out = self.run("snapshots --json --latest 1", ignore_error=False)
+        return {snap.get("hostname", "") for snap in json.loads(out or "[]")}
 
     def mount(
         self,

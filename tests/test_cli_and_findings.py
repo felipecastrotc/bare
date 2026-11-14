@@ -720,3 +720,49 @@ def test_gocryptfs_finder(monkeypatch: pytest.MonkeyPatch) -> None:
 
     drives = GocryptfsFinder().get_drives()
     assert drives[0]["label"] == "/enc"
+
+
+def test_forget_hosts_applies_each_policy_and_never_touches_unlisted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each listed host gets its own policy; unlisted (retired) hosts are never pruned."""
+    commands: list[str] = []
+    in_repo = [{"hostname": h} for h in ("mac", "new-phone", "old-phone", "lab")]
+
+    def fake_execute(cmd, env=None, mask=None, ignore_error=False):  # noqa: ANN001, ARG001
+        commands.append(cmd)
+        return json.dumps(in_repo) if " snapshots " in cmd else ""
+
+    monkeypatch.setattr("bare.bare.restic.execute_command", fake_execute)
+    restic = Restic("/repo", "pw", hostname="mac", name="n", check_hostname=False)
+    config = {
+        "restic": {
+            "skip-maintain": False,
+            "forget": {"keep-last": 1},  # ignored when forget-hosts is set
+            "forget-hosts": {
+                "mac": {"keep-last": 5, "keep-daily": 30},
+                "new-phone": {"keep-last": 10, "keep-daily": 20},
+            },
+            "check": {},
+        }
+    }
+
+    cli_main.post_backup_restic(restic, config, dry_run=False)
+    forgets = [c for c in commands if " forget " in c]
+    assert len(forgets) == 2
+    assert all("--prune" not in c for c in forgets)  # one prune at the end instead
+    mac = next(c for c in forgets if "--host mac" in c)
+    phone = next(c for c in forgets if "--host new-phone" in c)
+    assert "--keep-daily 30" in mac and "--keep-daily 20" in phone
+    assert not any("old-phone" in c or "--host lab" in c for c in forgets)
+    prunes = [c for c in commands if "prune" in c.split() and "forget" not in c.split()]
+    assert len(prunes) == 1
+    assert commands.index(prunes[0]) > commands.index(phone)
+    assert [c for c in commands if " check " in c]
+
+    # An empty policy is a config error, raised before anything is forgotten.
+    config["restic"]["forget-hosts"]["new-phone"] = {}
+    commands.clear()
+    with pytest.raises(ValueError, match="new-phone"):
+        cli_main.post_backup_restic(restic, config, dry_run=False)
+    assert not commands
