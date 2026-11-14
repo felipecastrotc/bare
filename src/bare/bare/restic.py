@@ -61,6 +61,7 @@ class Restic(Base):
         mask: str | None = None,
         dry_run: bool = False,
         custom_runner: str | None = None,
+        ignore_error: bool = True,
     ) -> str:
         if args is None:
             args = {}
@@ -73,7 +74,7 @@ class Restic(Base):
             cmd += " --dry-run"
         # return execute_command_test(cmd, self.env, mask)
         logger.info(cmd)
-        return execute_command(cmd, self.env, mask, ignore_error=True)
+        return execute_command(cmd, self.env, mask, ignore_error=ignore_error)
 
     def init(self) -> None:
         self.run("init")
@@ -120,12 +121,13 @@ class Restic(Base):
         if self.hostname is not None and hostname_filter:
             base_cmd += "--host " + self.hostname
 
-        self.run(base_cmd, args=options, dry_run=dry_run)
+        # Maintenance must fail loudly: a locked repository used to make forget and
+        # check exit non-zero while bare still reported "maintenance done".
+        self.run(base_cmd, args=options, dry_run=dry_run, ignore_error=False)
 
     def check(self, options: dict[str, Any], dry_run: bool = False) -> None:
-        # Base command for forgetting and pruning backups
         base_cmd = "check "
-        self.run(base_cmd, args=options, dry_run=dry_run)
+        self.run(base_cmd, args=options, dry_run=dry_run, ignore_error=False)
 
     def mount(
         self,
