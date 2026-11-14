@@ -813,18 +813,24 @@ def run_restic_command(
                 logger.info("Skipping to the next drive.")
 
 
-def maintain(configs: dict[str, dict[str, Any]]) -> None:
+def maintain(configs: dict[str, dict[str, Any]]) -> bool:
     """Perform maintenance tasks defined in the session file.
 
     Parameters
     ----------
     configs : dict[str, dict[str, Any]]
         Normalized target configurations keyed by name.
+
+    Returns
+    -------
+    bool
+        False if a restic forget/prune/check failed for any target.
     """
     if not configs:
         logger.info("No maintenance targets found in the session file.")
-        return
+        return True
 
+    ok = True
     for name, config in configs.items():
         logger.info(f"Starting maintenance for {name} to {config['destination']}")
         try:
@@ -846,6 +852,10 @@ def maintain(configs: dict[str, dict[str, Any]]) -> None:
                     logger.info("The destination is a Restic rest server")
         except AssertionError as e:
             logger.info(f"Error during maintenance: {e}")
+        except Exception as e:  # restic exited non-zero (see Restic.forget/check)
+            logger.error(f"Restic maintenance FAILED for {name}: {e}")
+            ok = False
+    return ok
 
 
 def umount() -> None:
@@ -970,8 +980,8 @@ def main() -> None:
         run_restic_command(configs, restic_cmd, dry_run=args.dry_run)
     elif args.command == "list":
         list_func(configs)
-    elif args.command == "maintain":
-        maintain(configs)
+    elif args.command == "maintain" and not maintain(configs):
+        sys.exit(1)
 
 
 if __name__ == "__main__":

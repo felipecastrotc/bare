@@ -123,7 +123,26 @@ def test_main_maintain_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cli_main, "resolve_session_path", lambda p: Path("s"))  # noqa: ARG005
     monkeypatch.setattr(cli_main, "load_session", lambda p: _base_session())  # noqa: ARG005
     called = {"maintain": False}
-    monkeypatch.setattr(cli_main, "maintain", lambda cfg: called.update(maintain=True))  # noqa: ARG005
+    monkeypatch.setattr(
+        cli_main,
+        "maintain",
+        lambda cfg: called.update(maintain=True) or True,  # noqa: ARG005
+    )
 
     cli_main.main()
     assert called["maintain"] is True
+
+
+def test_main_maintain_exits_nonzero_on_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parser = cli_main.build_parser()
+    monkeypatch.setattr(cli_main, "build_parser", lambda: parser)
+    monkeypatch.setattr(sys, "argv", ["bare", "maintain", "--session", "s"])
+    monkeypatch.setattr(cli_main, "resolve_session_path", lambda p: Path("s"))  # noqa: ARG005
+    monkeypatch.setattr(cli_main, "load_session", lambda p: _base_session())  # noqa: ARG005
+    monkeypatch.setattr(cli_main, "maintain", lambda cfg: False)  # noqa: ARG005
+
+    with pytest.raises(SystemExit) as exc:
+        cli_main.main()
+    assert exc.value.code == 1

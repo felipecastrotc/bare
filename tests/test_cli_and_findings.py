@@ -556,7 +556,28 @@ def test_maintain_runs_restic(monkeypatch: pytest.MonkeyPatch) -> None:
         "get_restic_instance",
         lambda config, destination_path, name, destination_type=None: DummyRestic(),  # noqa: ARG005
     )
-    cli_main.maintain(configs)
+    assert cli_main.maintain(configs) is True
+
+    # A restic that exits non-zero (e.g. repository locked) must fail maintenance,
+    # not log "maintenance done" and exit 0.
+    calls: list[bool] = []
+
+    def failing_execute(cmd, env=None, mask=None, ignore_error=False):  # noqa: ANN001, ARG001
+        calls.append(ignore_error)
+        if not ignore_error:
+            raise Exception("Command failed with error: repository is already locked")
+        return ""
+
+    monkeypatch.setattr("bare.bare.restic.execute_command", failing_execute)
+    monkeypatch.setattr(
+        cli_main,
+        "get_restic_instance",
+        lambda config, destination_path, name, destination_type=None: Restic(  # noqa: ARG005
+            "/repo", "pw", hostname="h", name=name, check_hostname=False
+        ),
+    )
+    assert cli_main.maintain(configs) is False
+    assert calls == [False]  # forget raised, check was not reached
 
 
 # ---------- Umount ----------
